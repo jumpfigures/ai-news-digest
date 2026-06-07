@@ -12,6 +12,7 @@ on:
 jobs:
   digest:
     runs-on: ubuntu-latest
+    timeout-minutes: 10 # safety net: auto-cancel if something hangs
     steps:
       - name: Checkout
         uses: actions/checkout@v4
