@@ -114,7 +114,12 @@ async function main() {
   console.log('Done! Wrote output/daily.md and output/daily.html');
 }
 
-main().catch((err) => {
-  console.error('Fatal:', err.message);
-  process.exit(1);
-});
+main()
+  // Force a clean exit. The HTTP client can keep a keep-alive socket open after
+  // the work is done, which otherwise leaves the process hanging (e.g. in CI).
+  // All output is written synchronously above, so exiting here is safe.
+  .then(() => process.exit(0))
+  .catch((err) => {
+    console.error('Fatal:', err.message);
+    process.exit(1);
+  });
