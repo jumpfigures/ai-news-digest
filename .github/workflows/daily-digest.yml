@@ -10,6 +10,17 @@ on:
     - cron: '0 12 * * *' # 19:00 WIB (malam)
   workflow_dispatch: {} # lets you trigger it manually from the Actions tab
 
+# Permissions required to publish to GitHub Pages.
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Don't let two runs deploy Pages at the same time.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
 jobs:
   digest:
     runs-on: ubuntu-latest
@@ -36,7 +47,9 @@ jobs:
         id: date
         run: echo "today=$(date -u +'%A, %B %d, %Y')" >> "$GITHUB_OUTPUT"
 
+      # Email failure should NOT block the website deploy, so allow it to fail.
       - name: Email the digest
+        continue-on-error: true
         uses: dawidd6/action-send-mail@v3
         with:
           server_address: smtp.gmail.com
@@ -45,7 +58,28 @@ jobs:
           username: ${{ secrets.MAIL_USERNAME }}
           password: ${{ secrets.MAIL_PASSWORD }}
           subject: "🗞️ AI News Digest — ${{ steps.date.outputs.today }}"
-          to: corneliusedoward@gmail.com
+          to: ${{ secrets.MAIL_USERNAME }} # sends to yourself; hides the address from the public repo
           from: AI News Digest <${{ secrets.MAIL_USERNAME }}>
           html_body: file://output/daily.html
           attachments: output/daily.md
+
+      - name: Prepare site
+        run: |
+          mkdir -p public
+          cp output/daily.html public/index.html
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./public
+
+  deploy:
+    needs: digest
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
