@@ -104,44 +104,65 @@ async function generateWithRetry(contents, config, maxRetries = 4) {
   }
 }
 
-// Summarize every article in a SINGLE request. Returns an array of markdown
-// strings aligned to the input order; any article the model omits falls back to
-// a graceful placeholder.
+// gemini-2.5-* models "think" by default, which consumes the output-token budget
+// and can truncate the JSON. Structured summarization doesn't need it, so we turn
+// thinking off to keep the full answer intact.
+const GEN_CONFIG = {
+  systemInstruction: SYSTEM_PROMPT,
+  temperature: 0.4,
+  maxOutputTokens: 16384,
+  thinkingConfig: { thinkingBudget: 0 },
+  responseMimeType: 'application/json',
+  responseSchema: RESPONSE_SCHEMA,
+};
+
+// Articles per request. Cramming too many into one call can return a truncated
+// JSON (some get dropped), so we summarize in reliably-sized chunks. A handful of
+// chunks per run still stays far inside the free-tier limits.
+const CHUNK_SIZE = 6;
+
+// Summarize every article, in chunks of CHUNK_SIZE. Returns an array of markdown
+// strings aligned to the input order; anything the model omits — or a whole
+// failed chunk — falls back to a graceful placeholder.
 export async function summarizeAll(articles) {
-  const prompt = articles
-    .map((a, i) =>
-      [
-        `### Article ${i + 1}`,
-        `Title: ${a.title}`,
-        `Source: ${a.source}`,
-        `Content: ${a.content}`,
-        `URL: ${a.link}`,
-      ].join('\n')
-    )
-    .join('\n\n');
+  const PLACEHOLDER = '_Summary unavailable._';
+  const summaries = new Array(articles.length).fill(PLACEHOLDER);
 
-  const response = await generateWithRetry(prompt, {
-    systemInstruction: SYSTEM_PROMPT,
-    temperature: 0.4,
-    maxOutputTokens: 8192,
-    // gemini-2.5-* models "think" by default, which consumes the output-token
-    // budget and can truncate the JSON. Structured summarization doesn't need
-    // it, so turn thinking off to keep the full answer intact.
-    thinkingConfig: { thinkingBudget: 0 },
-    responseMimeType: 'application/json',
-    responseSchema: RESPONSE_SCHEMA,
-  });
+  for (let start = 0; start < articles.length; start += CHUNK_SIZE) {
+    const chunk = articles.slice(start, start + CHUNK_SIZE);
+    const prompt = chunk
+      .map((a, i) =>
+        [
+          `### Article ${i + 1}`,
+          `Title: ${a.title}`,
+          `Source: ${a.source}`,
+          `Content: ${a.content}`,
+          `URL: ${a.link}`,
+        ].join('\n')
+      )
+      .join('\n\n');
 
-  const text = (response.text || '').trim();
-  if (!text) throw new Error('Empty response from Gemini');
+    try {
+      const response = await generateWithRetry(prompt, GEN_CONFIG);
+      const text = (response.text || '').trim();
+      if (!text) throw new Error('Empty response from Gemini');
+      const parsed = parseJsonArray(text);
 
-  const parsed = parseJsonArray(text);
-
-  const byIndex = new Map();
-  for (const item of parsed) {
-    if (item && typeof item.index === 'number' && item.summary) {
-      byIndex.set(item.index, String(item.summary).trim());
+      const byIndex = new Map();
+      for (const item of parsed) {
+        if (item && typeof item.index === 'number' && item.summary) {
+          byIndex.set(item.index, String(item.summary).trim());
+        }
+      }
+      chunk.forEach((_, i) => {
+        const s = byIndex.get(i + 1);
+        if (s) summaries[start + i] = s;
+      });
+    } catch (err) {
+      // One bad chunk shouldn't sink the whole digest — keep the rest.
+      console.error(`  ✗ articles ${start + 1}-${start + chunk.length}: ${err.message}`);
     }
   }
-  return articles.map((_, i) => byIndex.get(i + 1) || '_Summary unavailable._');
+
+  return summaries;
 }

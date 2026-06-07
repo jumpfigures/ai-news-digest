@@ -88,7 +88,7 @@ async function main() {
     process.exit(1);
   }
 
-  console.log(`Summarizing ${articles.length} articles with Gemini (single request)...`);
+  console.log(`Summarizing ${articles.length} articles with Gemini...`);
   let summaries;
   try {
     summaries = await summarizeAll(articles);
