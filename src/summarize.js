@@ -7,15 +7,31 @@ function client() {
   return ai;
 }
 
-// One request summarizes ALL articles at once. The free tier allows only ~20
-// requests/day PER MODEL (and ~10/min), so batching into a single call keeps us
-// far inside the limits instead of spending one request per article.
-// gemini-2.5-flash is a fast, capable GA model with good quality for news.
 const MODEL = 'gemini-2.5-flash';
+const PLACEHOLDER = '_Summary unavailable._';
+
+// Bloomberg-style news categories. Gemini classifies each article into one.
+export const CATEGORIES = [
+  'Markets',
+  'Economy',
+  'Politics',
+  'Technology',
+  'Crypto',
+  'Business',
+  'World',
+];
 
 const SYSTEM_PROMPT = `You are a sharp financial and technology news analyst.
-You will receive several numbered news articles. For EACH article, write a
-concise structured analysis in markdown using EXACTLY this template:
+You will receive several numbered news articles. For EACH article:
+
+1. Classify it into EXACTLY ONE category from this list:
+   Markets, Economy, Politics, Technology, Crypto, Business, World.
+   (Markets = stocks/bonds/commodities/trading; Economy = macro/inflation/rates/
+   central banks/jobs/trade; Politics = government/policy/elections/geopolitics/war;
+   Technology = tech/AI/software/startups; Crypto = crypto/blockchain/digital assets;
+   Business = companies/deals/M&A/earnings; World = anything else.)
+
+2. Write a concise structured analysis in markdown using EXACTLY this template:
 
 **Summary**
 - [3–5 bullets covering the key facts]
@@ -24,23 +40,42 @@ concise structured analysis in markdown using EXACTLY this template:
 [1–2 sentences on broader significance]
 
 **Market Impact**
-[1–2 sentences on market/investment implications, or "N/A" if not relevant]
+- [2–4 short bullets on the realistic, plausible market implications: which sectors,
+assets, companies, rates, or commodities could move and in which direction — note
+upside AND downside where relevant. Stay grounded and proportional; if the likely
+impact is small, indirect, or uncertain, say so honestly. Never write "N/A" and do
+NOT exaggerate or hype.]
 
-Be analytical, precise, and direct. No preamble. Return exactly one analysis per
+Be analytical, precise, and direct. No preamble. Return exactly one entry per
 article, echoing back the article's index number.`;
 
-// Force structured JSON output so we can map each summary back to its article.
 const RESPONSE_SCHEMA = {
   type: Type.ARRAY,
   items: {
     type: Type.OBJECT,
     properties: {
       index: { type: Type.INTEGER, description: 'The 1-based article number' },
+      category: { type: Type.STRING, enum: CATEGORIES, description: 'Best-fit category' },
       summary: { type: Type.STRING, description: 'The markdown analysis block' },
     },
-    required: ['index', 'summary'],
+    required: ['index', 'category', 'summary'],
   },
 };
+
+const GEN_CONFIG = {
+  systemInstruction: SYSTEM_PROMPT,
+  temperature: 0.4,
+  maxOutputTokens: 16384,
+  // gemini-2.5-* models "think" by default, eating the output-token budget and
+  // truncating the JSON. We don't need it here, so turn thinking off.
+  thinkingConfig: { thinkingBudget: 0 },
+  responseMimeType: 'application/json',
+  responseSchema: RESPONSE_SCHEMA,
+};
+
+// Articles per request. Cramming too many into one call can return a truncated
+// JSON (some get dropped), so we summarize in reliably-sized chunks.
+const CHUNK_SIZE = 6;
 
 function isPerDayQuota(msg) {
   return /per[\s_-]?day|requestsperday/i.test(msg);
@@ -50,8 +85,6 @@ function parseJsonArray(text) {
   try {
     return JSON.parse(text);
   } catch {
-    // Defensive: strip code fences or extract the [ ... ] slice if the model
-    // wrapped the JSON in prose.
     const cleaned = text.replace(/```(?:json)?/gi, '').trim();
     const start = cleaned.indexOf('[');
     const end = cleaned.lastIndexOf(']');
@@ -80,15 +113,13 @@ async function generateWithRetry(contents, config, maxRetries = 4) {
         status === 500 ||
         /unavailable|overloaded|high demand|internal error/i.test(msg);
 
-      // A per-DAY quota won't reset for hours — retrying is pointless. Fail fast
-      // with a clear message instead of hanging on minute-long backoffs.
+      // A per-DAY quota won't reset for hours — fail fast instead of hanging.
       if (isQuota && isPerDayQuota(msg)) {
         throw new Error(
           'Daily free-tier quota exhausted for this model. Try again tomorrow, ' +
             'switch MODEL in summarize.js, or enable billing in Google AI Studio.'
         );
       }
-      // Per-minute limit or transient server error (503/500): wait, then retry.
       if ((isQuota || isTransient) && attempt < maxRetries) {
         const suggested = msg.match(/retry in ([\d.]+)s/i);
         const waitMs = Math.min(
@@ -104,29 +135,11 @@ async function generateWithRetry(contents, config, maxRetries = 4) {
   }
 }
 
-// gemini-2.5-* models "think" by default, which consumes the output-token budget
-// and can truncate the JSON. Structured summarization doesn't need it, so we turn
-// thinking off to keep the full answer intact.
-const GEN_CONFIG = {
-  systemInstruction: SYSTEM_PROMPT,
-  temperature: 0.4,
-  maxOutputTokens: 16384,
-  thinkingConfig: { thinkingBudget: 0 },
-  responseMimeType: 'application/json',
-  responseSchema: RESPONSE_SCHEMA,
-};
-
-// Articles per request. Cramming too many into one call can return a truncated
-// JSON (some get dropped), so we summarize in reliably-sized chunks. A handful of
-// chunks per run still stays far inside the free-tier limits.
-const CHUNK_SIZE = 6;
-
-// Summarize every article, in chunks of CHUNK_SIZE. Returns an array of markdown
-// strings aligned to the input order; anything the model omits — or a whole
-// failed chunk — falls back to a graceful placeholder.
+// Summarize + categorize every article, in chunks of CHUNK_SIZE. Returns an
+// array of { summary, category } aligned to the input order; anything the model
+// omits — or a failed chunk — falls back to a graceful placeholder.
 export async function summarizeAll(articles) {
-  const PLACEHOLDER = '_Summary unavailable._';
-  const summaries = new Array(articles.length).fill(PLACEHOLDER);
+  const out = articles.map(() => ({ summary: PLACEHOLDER, category: 'World' }));
 
   for (let start = 0; start < articles.length; start += CHUNK_SIZE) {
     const chunk = articles.slice(start, start + CHUNK_SIZE);
@@ -151,12 +164,15 @@ export async function summarizeAll(articles) {
       const byIndex = new Map();
       for (const item of parsed) {
         if (item && typeof item.index === 'number' && item.summary) {
-          byIndex.set(item.index, String(item.summary).trim());
+          byIndex.set(item.index, {
+            summary: String(item.summary).trim(),
+            category: CATEGORIES.includes(item.category) ? item.category : 'World',
+          });
         }
       }
       chunk.forEach((_, i) => {
-        const s = byIndex.get(i + 1);
-        if (s) summaries[start + i] = s;
+        const item = byIndex.get(i + 1);
+        if (item) out[start + i] = item;
       });
     } catch (err) {
       // One bad chunk shouldn't sink the whole digest — keep the rest.
@@ -164,5 +180,5 @@ export async function summarizeAll(articles) {
     }
   }
 
-  return summaries;
+  return out;
 }
