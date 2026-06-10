@@ -2,7 +2,7 @@ import './env.js';
 import { mkdirSync, writeFileSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
-import { fetchAllFeeds, fetchResearch, fetchTicker, fetchCandles } from './fetch.js';
+import { fetchAllFeeds, fetchResearch, fetchTicker } from './fetch.js';
 import { summarizeAll } from './summarize.js';
 import { formatDate, buildMarkdown, buildHtml } from './render.js';
 
@@ -49,16 +49,12 @@ async function main() {
     category: summaries[i].category,
   }));
 
-  const [research, ticker, charts] = await Promise.all([
-    fetchResearch(),
-    fetchTicker(),
-    fetchCandles(),
-  ]);
+  const [research, ticker] = await Promise.all([fetchResearch(), fetchTicker()]);
 
   const now = new Date();
   const dateStr = formatDate(now);
   const markdown = buildMarkdown(results, now, dateStr);
-  const html = buildHtml(results, now, dateStr, research, ticker, charts);
+  const html = buildHtml(results, now, dateStr, research, ticker);
 
   mkdirSync(OUTPUT_DIR, { recursive: true });
   writeFileSync(MD_FILE, markdown, 'utf-8');

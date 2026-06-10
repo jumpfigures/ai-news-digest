@@ -54,7 +54,7 @@ export function buildMarkdown(results, now, dateStr) {
 // Progressive enhancement: the tab bar is hidden by default and revealed by JS,
 // so email clients (no JS) just show every article, while the website (JS) gets
 // clickable source tabs that filter the feed.
-export function buildHtml(results, now, dateStr, research = [], ticker = [], charts = []) {
+export function buildHtml(results, now, dateStr, research = [], ticker = []) {
   // Sources in first-seen order, with counts.
   const order = [];
   const counts = {};
@@ -213,9 +213,7 @@ export function buildHtml(results, now, dateStr, research = [], ticker = [], cha
   .chartgrid { display:grid; grid-template-columns:repeat(auto-fit, minmax(min(100%, 520px), 1fr)); gap:16px; }
   .chartcell { border:1px solid var(--line); background:#0c0a06; border-radius:2px; padding:8px 8px 4px; }
   .chartlabel { color:var(--amber2); font-size:12px; font-weight:bold; letter-spacing:1px; margin:2px 0 8px; display:flex; justify-content:space-between; align-items:center; }
-  .lwc { height:420px; width:100%; }
-  .ctoggle .ctype { font-family:inherit; font-size:10px; font-weight:bold; letter-spacing:1px; cursor:pointer; background:#16120a; color:var(--amber); border:1px solid #4a3a14; padding:2px 8px; border-radius:2px; margin-left:4px; }
-  .ctoggle .ctype.active { background:var(--amber); color:#000; }
+  .chartbox { height:520px; width:100%; }
   .research { margin-top:24px; max-width:900px; }
   .rcard { border-bottom:1px dashed var(--line); padding:11px 2px; }
   .rinst { display:inline-block; background:var(--amber); color:#000; font-weight:bold; font-size:10px; letter-spacing:1px; padding:1px 6px; border-radius:2px; margin-right:8px; }
@@ -250,7 +248,6 @@ export function buildHtml(results, now, dateStr, research = [], ticker = [], cha
     color:var(--dim); font-size:11px; letter-spacing:.5px;
   }
 </style>
-<script src="https://unpkg.com/lightweight-charts@4.2.3/dist/lightweight-charts.standalone.production.js"></script>
 </head>
 <body>
   <div class="chrome">
@@ -342,71 +339,46 @@ ${cards}
         sectBtns[i].addEventListener('click', function () { showView(this.getAttribute('data-view')); });
       }
 
-      // Candle data embedded server-side (Yahoo snapshot). Drawn with TradingView
-      // Lightweight Charts so we fully control the colors (teal/coral) + theme.
-      var CHARTS = ${JSON.stringify(charts)};
+      // One TradingView chart per asset class, in a grid. The free widget gives
+      // the full toolbar (timeframes, indicators, drawing) + live data; candle
+      // colors are fixed by the widget and can't be themed.
+      var PANELS = [
+        { label: 'INDEX · S&P 500', sym: 'FOREXCOM:SPXUSD' },
+        { label: 'CRYPTO · BITCOIN', sym: 'BINANCE:BTCUSDT' }
+      ];
 
-      function createPanel(grid, label, candles) {
+      function addChart(grid, label, symbol) {
         var cell = document.createElement('div');
         cell.className = 'chartcell';
         var head = document.createElement('div');
         head.className = 'chartlabel';
-        var title = document.createElement('span');
-        title.textContent = label;
-        var toggle = document.createElement('span');
-        toggle.className = 'ctoggle';
-        toggle.innerHTML =
-          '<button class="ctype active" type="button" data-t="candles">CANDLES</button>' +
-          '<button class="ctype" type="button" data-t="line">LINE</button>';
-        head.appendChild(title);
-        head.appendChild(toggle);
+        head.textContent = label;
         cell.appendChild(head);
         var box = document.createElement('div');
-        box.className = 'lwc';
+        box.className = 'tradingview-widget-container chartbox';
+        box.innerHTML = '<div class="tradingview-widget-container__widget" style="width:100%"></div>';
+        var s = document.createElement('script');
+        s.src = 'https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js';
+        s.async = true;
+        s.text = JSON.stringify({
+          width: '100%', height: 520, symbol: symbol, interval: 'D', timezone: 'Asia/Jakarta',
+          theme: 'dark', style: '1', locale: 'en', allow_symbol_change: true,
+          withdateranges: true, hide_side_toolbar: false, details: false, calendar: false,
+          backgroundColor: 'rgba(10,10,10,1)', gridColor: 'rgba(255,160,40,0.06)',
+          support_host: 'https://www.tradingview.com'
+        });
+        box.appendChild(s);
         cell.appendChild(box);
         grid.appendChild(cell);
-
-        var chart = LightweightCharts.createChart(box, {
-          autoSize: true,
-          layout: { background: { type: 'solid', color: '#0a0a0a' }, textColor: '#ffa028', fontFamily: 'Consolas, monospace' },
-          grid: { vertLines: { color: 'rgba(255,160,40,0.06)' }, horzLines: { color: 'rgba(255,160,40,0.06)' } },
-          rightPriceScale: { borderColor: '#2a2210' },
-          timeScale: { borderColor: '#2a2210' },
-          crosshair: { mode: 1 }
-        });
-        var candleSeries = chart.addCandlestickSeries({
-          upColor: '#00C2A8', downColor: '#FF7A59',
-          borderUpColor: '#00C2A8', borderDownColor: '#FF7A59',
-          wickUpColor: '#00C2A8', wickDownColor: '#FF7A59'
-        });
-        candleSeries.setData(candles);
-        var lineSeries = chart.addLineSeries({ color: '#ffc46b', lineWidth: 2, visible: false });
-        lineSeries.setData(candles.map(function (c) { return { time: c.time, value: c.close }; }));
-        chart.timeScale().fitContent();
-
-        var btns = toggle.querySelectorAll('.ctype');
-        for (var b = 0; b < btns.length; b++) {
-          btns[b].addEventListener('click', function () {
-            for (var k = 0; k < btns.length; k++) btns[k].classList.remove('active');
-            this.classList.add('active');
-            var line = this.getAttribute('data-t') === 'line';
-            candleSeries.applyOptions({ visible: !line });
-            lineSeries.applyOptions({ visible: line });
-          });
-        }
       }
 
       function loadMarket() {
         var host = document.getElementById('tvHost');
         host.innerHTML = '';
-        if (typeof LightweightCharts === 'undefined') {
-          host.innerHTML = '<div class="routlet">Chart library failed to load — refresh to retry.</div>';
-          return;
-        }
         var grid = document.createElement('div');
         grid.className = 'chartgrid';
         host.appendChild(grid);
-        for (var i = 0; i < CHARTS.length; i++) createPanel(grid, CHARTS[i].label, CHARTS[i].candles);
+        for (var i = 0; i < PANELS.length; i++) addChart(grid, PANELS[i].label, PANELS[i].sym);
       }
 
       // Live clock + auto-refresh every 60s (website only; email ignores JS).
