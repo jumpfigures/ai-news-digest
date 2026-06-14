@@ -13,6 +13,7 @@ const PLACEHOLDER = '_Summary unavailable._';
 // Bloomberg-style news categories. Gemini classifies each article into one.
 export const CATEGORIES = [
   'Markets',
+  'Commodities',
   'Economy',
   'Politics',
   'Technology',
@@ -26,12 +27,15 @@ const SYSTEM_PROMPT = `You are a sharp financial and technology news analyst.
 You will receive several numbered news articles. For EACH article:
 
 1. Classify it into EXACTLY ONE category from this list:
-   Markets, Economy, Politics, Technology, Biotechnology, Crypto, Business, World.
-   (Markets = stocks/bonds/commodities/trading; Economy = macro/inflation/rates/
-   central banks/jobs/trade; Politics = government/policy/elections/geopolitics/war;
-   Technology = tech/AI/software/startups; Biotechnology = biotech/pharma/drugs/
-   clinical trials/FDA/medical science; Crypto = crypto/blockchain/digital assets;
-   Business = companies/deals/M&A/earnings; World = anything else.)
+   Markets, Commodities, Economy, Politics, Technology, Biotechnology, Crypto, Business, World.
+   (Markets = stocks/bonds/equity indices/trading; Commodities = oil/gas/energy,
+   gold/silver/precious & base metals, mining, and agricultural/soft commodities
+   (grains, coffee, sugar, cocoa, cotton, livestock), plus commodity futures/prices;
+   Economy = macro/inflation/rates/central banks/jobs/trade; Politics = government/
+   policy/elections/geopolitics/war; Technology = tech/AI/software/startups;
+   Biotechnology = biotech/pharma/drugs/clinical trials/FDA/medical science;
+   Crypto = crypto/blockchain/digital assets; Business = companies/deals/M&A/earnings;
+   World = anything else.)
 
 2. Write "brief": a comprehensive briefing of the full story IN YOUR OWN WORDS —
    2–4 short paragraphs (markdown) covering EVERYTHING important from the provided
@@ -84,7 +88,7 @@ const GEN_CONFIG = {
 
 // Articles per request. Cramming too many into one call can return a truncated
 // JSON (some get dropped), so we summarize in reliably-sized chunks.
-const CHUNK_SIZE = 7; // 27 articles → 4 calls/run; keeps daily usage well under the 20/day free tier
+const CHUNK_SIZE = 7; // ~36 articles → ~6 calls/run (×4 daily cron runs); within the free-tier RPD
 
 function isPerDayQuota(msg) {
   return /per[\s_-]?day|requestsperday/i.test(msg);

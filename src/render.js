@@ -92,7 +92,7 @@ export function buildHtml(results, now, dateStr, research = [], ticker = []) {
   }
 
   // Categories present (fixed preferred order first, then any extras), with counts.
-  const CAT_ORDER = ['Markets', 'Economy', 'Politics', 'Technology', 'Biotechnology', 'Crypto', 'Business', 'World'];
+  const CAT_ORDER = ['Markets', 'Commodities', 'Economy', 'Politics', 'Technology', 'Biotechnology', 'Crypto', 'Business', 'World'];
   const catCounts = {};
   for (const { category } of results) {
     const c = category || 'World';

@@ -30,6 +30,22 @@ const FEEDS = [
   },
   { name: 'MarketWatch', url: 'http://feeds.marketwatch.com/marketwatch/topstories/' },
   { name: 'BioPharma Dive', url: 'https://www.biopharmadive.com/feeds/news/' },
+  // ---- Commodities: energy, metals, and agricultural/soft commodities ----
+  { name: 'OilPrice', url: 'https://oilprice.com/rss/main' }, // crude, fuels, natural gas, energy
+  { name: 'Mining.com', url: 'https://www.mining.com/feed/' }, // gold, silver, copper, base metals, mining
+  // Broad cross-commodity headlines (precious + base metals, energy, grains, softs)
+  // via Google News so coverage spans the whole complex, not just energy/metals.
+  {
+    name: 'Commodities',
+    url:
+      'https://news.google.com/rss/search?q=' +
+      encodeURIComponent(
+        '(commodity OR "crude oil" OR OPEC OR "natural gas" OR gold OR silver OR copper OR ' +
+          'aluminum OR wheat OR corn OR soybean OR coffee OR sugar OR cocoa OR cotton) ' +
+          '(price OR prices OR futures OR supply OR demand OR output) when:1d'
+      ) +
+      '&hl=en-US&gl=US&ceid=US:en',
+  },
 ];
 
 const MAX_ARTICLES_PER_FEED = 3;
