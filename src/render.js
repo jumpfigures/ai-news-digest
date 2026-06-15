@@ -268,30 +268,23 @@ export function buildHtml(results, now, dateStr, research = [], ticker = []) {
     margin:18px 0 2px; border-left:4px solid var(--amber); padding-left:10px;
   }
   .meta { color:var(--dim); font-size:12px; margin-bottom:6px; }
-  /* NEWS dropdown (hidden by default; revealed by JS on the website) */
+  /* NEWS category chips — all categories shown in a row (revealed by JS on the website) */
   .newsmenu {
     display:none; position:sticky; top:0; z-index:5; background:var(--bg);
     padding:10px 0; border-bottom:1px solid var(--line); margin-bottom:6px;
   }
-  .newswrap { position:relative; display:inline-block; }
-  .newsbtn {
-    font-family:inherit; font-size:12px; font-weight:bold; letter-spacing:1px; cursor:pointer;
-    background:var(--amber); color:#000; border:none; padding:7px 12px; border-radius:2px;
-  }
-  .newsbtn .caret { margin-left:6px; }
   .newslist {
-    list-style:none; margin:4px 0 0; padding:4px; position:absolute; top:100%; left:0;
-    background:#0d0b06; border:1px solid #4a3a14; border-radius:2px; min-width:260px;
-    max-height:60vh; overflow:auto; z-index:10;
+    list-style:none; margin:0; padding:0; display:flex; flex-wrap:wrap; gap:6px;
   }
-  .newslist[hidden] { display:none; }
   .newsitem {
-    padding:6px 10px; cursor:pointer; color:var(--amber); font-size:12px; letter-spacing:1px;
-    display:flex; justify-content:space-between; gap:16px;
+    padding:5px 11px; cursor:pointer; color:var(--amber); font-size:11px; font-weight:bold;
+    letter-spacing:1px; white-space:nowrap; border:1px solid #4a3a14; border-radius:2px;
+    background:#0d0b06; display:inline-flex; align-items:center; gap:7px;
   }
   .newsitem:hover { background:#241c0c; }
-  .newsitem.active { background:var(--amber); color:#000; }
-  .newsitem i { font-style:normal; opacity:.7; }
+  .newsitem.active { background:var(--amber); color:#000; border-color:var(--amber); }
+  .newsitem i { font-style:normal; opacity:.6; }
+  .newsitem.active i { opacity:.75; }
   /* top section tabs: NEWS / MARKET */
   .sectiontabs { display:none; gap:4px; margin:8px 0 12px; border-bottom:2px solid var(--line); }
   .sectiontab {
@@ -556,10 +549,7 @@ export function buildHtml(results, now, dateStr, research = [], ticker = []) {
 
     <div id="newsView">
       <div class="newsmenu" id="newsmenu">
-        <div class="newswrap">
-          <button class="newsbtn" id="newsbtn" type="button">▸ CATEGORY <span class="caret">▾</span></button>
-          <ul class="newslist" id="newslist" hidden>${items}</ul>
-        </div>
+        <ul class="newslist" id="newslist">${items}</ul>
       </div>
       <div class="empty" id="empty">No stories in this category.</div>
       <div class="feed" id="feed">
@@ -726,7 +716,6 @@ ${cards}
       var menu = document.getElementById('newsmenu');
       if (!menu) return;
       menu.style.display = 'block'; // reveal only when JS runs (website, not email)
-      var btn = document.getElementById('newsbtn');
       var list = document.getElementById('newslist');
       var items = list.querySelectorAll('.newsitem');
       var cards = document.querySelectorAll('.card');
@@ -740,19 +729,13 @@ ${cards}
         }
         if (empty) empty.style.display = shown ? 'none' : 'block';
       }
-      btn.addEventListener('click', function (e) {
-        e.stopPropagation();
-        list.hidden = !list.hidden;
-      });
       for (var i = 0; i < items.length; i++) {
         items[i].addEventListener('click', function () {
           for (var j = 0; j < items.length; j++) items[j].classList.remove('active');
           this.classList.add('active');
           filter(this.getAttribute('data-cat'));
-          list.hidden = true;
         });
       }
-      document.addEventListener('click', function () { list.hidden = true; });
 
       // Section tabs: NEWS / MARKET (revealed only on the website).
       var sectiontabs = document.getElementById('sectiontabs');
