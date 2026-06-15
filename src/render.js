@@ -343,11 +343,10 @@ export function buildHtml(results, now, dateStr, research = [], ticker = []) {
   .rcard a { color:var(--amber2); text-decoration:none; font-size:14px; border-bottom:1px dotted #5a4a20; }
   .rcard a:hover { color:#fff; border-color:#fff; }
   .routlet { display:block; color:var(--dim); font-size:11px; margin-top:4px; letter-spacing:1px; text-transform:uppercase; }
-  /* Bloomberg-style multi-column masonry grid; leftover space at the bottom is fine. */
-  .feed { column-width:340px; column-gap:18px; }
+  /* News grid: cards fill left-to-right, then wrap to the next row. */
+  .feed { display:grid; grid-template-columns:repeat(auto-fill, minmax(340px, 1fr)); gap:18px; align-items:start; }
   .card {
-    break-inside:avoid; -webkit-column-break-inside:avoid; display:inline-block; width:100%;
-    border:1px solid var(--line); background:#0c0a06; padding:12px 14px; margin:0 0 18px; border-radius:2px;
+    border:1px solid var(--line); background:#0c0a06; padding:12px 14px; margin:0; border-radius:2px;
   }
   h2 { font-size:15.5px; line-height:1.4; margin:0 0 4px; }
   h2 a { color:var(--amber2); text-decoration:none; border-bottom:1px dotted #5a4a20; }
