@@ -53,7 +53,7 @@ function colorFields(html) {
 // Flat markdown report — used for output/daily.md (and the email attachment).
 export function buildMarkdown(results, now, dateStr) {
   const lines = [
-    `# Jumpfigures — ${dateStr}`,
+    `# Zerotuones — ${dateStr}`,
     ``,
     `_Generated at ${now.toISOString()} · ${results.length} articles_`,
     ``,
@@ -249,7 +249,7 @@ export function buildHtml(results, now, dateStr, research = [], ticker = []) {
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Jumpfigures — ${esc(dateStr)}</title>
+<title>Zerotuones — ${esc(dateStr)}</title>
 <script>document.documentElement.className += ' js';</script>
 <style>
   :root {
@@ -578,20 +578,20 @@ export function buildHtml(results, now, dateStr, research = [], ticker = []) {
       <div class="cnode" style="left:90%;top:33%"><span class="dot"></span><span class="ring" style="animation-delay:2.3s"></span><span class="clbl">TOKYO</span></div>
     </div>
     <div class="covtop">
-      <span><span class="windots"><span class="wd d-r">✕</span><span class="wd d-y">⟳</span><span class="wd d-g"></span></span>&nbsp;&nbsp;JUMPFIGURES</span>
+      <span><span class="windots"><span class="wd d-r">✕</span><span class="wd d-y">⟳</span><span class="wd d-g"></span></span>&nbsp;&nbsp;ZEROTUONES</span>
       <span class="mid">MARKET&nbsp;INTELLIGENCE&nbsp;·&nbsp;SYSTEM&nbsp;BOOT</span>
       <span><span id="covclock">--:--:--</span>&nbsp;&nbsp;AINEWS&lt;GO&gt;</span>
     </div>
     <div class="covmain">
       <div class="covpanel covcenter">
-        <div class="covbrand">JUMPFIGURES</div>
+        <div class="covbrand">ZEROTUONES</div>
         <div class="covsub">MARKET INTELLIGENCE TERMINAL</div>
         <pre class="covlog" id="covlog"></pre>
         <div class="covbar"><i id="covbarfill"></i></div>
         <div class="coventer" id="coventer">[ PRESS ENTER TO LAUNCH ]&nbsp;<span class="blink">▍</span></div>
       </div>
     </div>
-    <div class="covcmd"><span class="prompt">JUMPFIGURES&gt;</span> <span id="covcmdtext"></span><span class="blink">▍</span></div>
+    <div class="covcmd"><span class="prompt">ZEROTUONES&gt;</span> <span id="covcmdtext"></span><span class="blink">▍</span></div>
     <div class="covfn">
       <span class="fk go"><b>F1</b>HELP</span>
       <span class="fk"><b>F2</b>NEWS</span>
@@ -604,12 +604,12 @@ export function buildHtml(results, now, dateStr, research = [], ticker = []) {
     <div class="coverscan"></div>
   </div>
   <div class="chrome">
-    <span><span class="windots"><button class="wd d-r" id="wdClose" type="button" title="Close" aria-label="Close">✕</button><button class="wd d-y" id="wdReload" type="button" title="Reload" aria-label="Reload">⟳</button><button class="wd d-g" id="wdFull" type="button" title="Full screen" aria-label="Full screen"></button></span>&nbsp;&nbsp;JUMPFIGURES</span>
+    <span><span class="windots"><button class="wd d-r" id="wdClose" type="button" title="Close" aria-label="Close">✕</button><button class="wd d-y" id="wdReload" type="button" title="Reload" aria-label="Reload">⟳</button><button class="wd d-g" id="wdFull" type="button" title="Full screen" aria-label="Full screen"></button></span>&nbsp;&nbsp;ZEROTUONES</span>
     <span>AINEWS&lt;GO&gt;</span>
   </div>
   <div class="wrap">
     <div class="status">▸ LIVE · <span id="clock">--:--:--</span> · AUTO-REFRESH <b>2s</b> · ${order.length} SOURCES<span class="blink">&nbsp;▍</span></div>
-    <h1>Jumpfigures — ${esc(dateStr)}</h1>
+    <h1>Zerotuones — ${esc(dateStr)}</h1>
     <div class="meta">Generated ${now.toISOString()} · ${results.length} stories</div>
     <div class="sectiontabs" id="sectiontabs">
       <button class="sectiontab active" data-view="news" type="button">▸ NEWS</button>
@@ -647,7 +647,7 @@ ${cards}
         </div>
       </div>
     </div>
-    <div class="foot">JUMPFIGURES · powered by Gemini · ${order.map(esc).join(' · ')}</div>
+    <div class="foot">ZEROTUONES · powered by Gemini · ${order.map(esc).join(' · ')}</div>
   </div>
   <script>
     (function () {
@@ -914,7 +914,7 @@ ${cards}
       var reader = document.createElement('div');
       reader.className = 'reader';
       reader.innerHTML =
-        '<div class="rpanel"><div class="rphead"><span>■ ARTICLE READER · JUMPFIGURES</span>' +
+        '<div class="rpanel"><div class="rphead"><span>■ ARTICLE READER · ZEROTUONES</span>' +
         '<button class="rpclose" type="button">✕ CLOSE [ESC]</button></div>' +
         '<div class="rpbody"></div></div>';
       document.body.appendChild(reader);
@@ -1016,7 +1016,7 @@ ${cards}
         if (document.querySelector('.closedscreen')) return;
         var ov = document.createElement('div');
         ov.className = 'closedscreen';
-        ov.innerHTML = '<div>\\u25B8 JUMPFIGURES SESSION ENDED<br><span>click anywhere to relaunch</span></div>';
+        ov.innerHTML = '<div>\\u25B8 ZEROTUONES SESSION ENDED<br><span>click anywhere to relaunch</span></div>';
         ov.addEventListener('click', function () { location.reload(); });
         document.body.appendChild(ov);
       });
