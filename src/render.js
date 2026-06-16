@@ -560,7 +560,7 @@ export function buildHtml(results, now, dateStr, research = [], ticker = []) {
     <span>AINEWS&lt;GO&gt;</span>
   </div>
   <div class="wrap">
-    <div class="status">▸ LIVE · <span id="clock">--:--:--</span> · AUTO-REFRESH <b>5s</b> · ${order.length} SOURCES<span class="blink">&nbsp;▍</span></div>
+    <div class="status">▸ LIVE · <span id="clock">--:--:--</span> · AUTO-REFRESH <b>2s</b> · ${order.length} SOURCES<span class="blink">&nbsp;▍</span></div>
     <h1>Jumpfigures — ${esc(dateStr)}</h1>
     <div class="meta">Generated ${now.toISOString()} · ${results.length} stories</div>
     <div class="sectiontabs" id="sectiontabs">
@@ -953,7 +953,7 @@ ${cards}
       tick();
       setInterval(tick, 1000);
 
-      // Auto-refresh: every 5s check (in the background) whether new content was
+      // Auto-refresh: every 2s check (in the background) whether new content was
       // published; reload only when it actually changed — keeps the page always
       // fresh without flicker. Paused while reading, in a menu, or on MARKET.
       var stampEl = document.querySelector('.meta');
@@ -967,7 +967,7 @@ ${cards}
             if (m && stamp && m[1] !== stamp) window.location.reload();
           })
           .catch(function () {});
-      }, 5000);
+      }, 2000);
     })();
   </script>
 </body>
