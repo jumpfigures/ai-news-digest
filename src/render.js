@@ -357,7 +357,7 @@ export function buildHtml(results, now, dateStr, research = [], ticker = []) {
   .rcard a:hover { color:#fff; border-color:#fff; }
   .routlet { display:block; color:var(--dim); font-size:11px; margin-top:4px; letter-spacing:1px; text-transform:uppercase; }
   /* News grid: cards fill left-to-right, then wrap to the next row. */
-  .feed { display:grid; grid-template-columns:repeat(auto-fill, minmax(340px, 1fr)); gap:18px; align-items:start; }
+  .feed { display:grid; grid-template-columns:repeat(auto-fill, minmax(min(100%, 340px), 1fr)); gap:18px; align-items:start; }
   /* No boxy outline — a left accent tick + subtle tint, terminal-feed style. */
   .card {
     background:#0b0905; padding:11px 14px; margin:0;
@@ -513,6 +513,27 @@ export function buildHtml(results, now, dateStr, research = [], ticker = []) {
     .covmain { grid-template-columns:1fr; }
     .covside { display:none; }
     .covfn .fk.opt { display:none; }
+    /* on a portrait phone the wide map is cropped to a center strip, so the
+       geo-positioned hub nodes would float over empty edges — hide them. */
+    .covnodes { display:none; }
+    .covtop .mid { display:none; }
+    .covbrand { letter-spacing:4px; }
+    .covcmd { font-size:11px; }
+  }
+  /* ---- phone layout for the digest below the cover ---- */
+  @media (max-width:600px) {
+    body { font-size:13.5px; }
+    .wrap { padding:0 12px; }
+    .chrome { font-size:11px; letter-spacing:.5px; padding:6px 10px; }
+    .status { font-size:11px; letter-spacing:0; }
+    h1 { font-size:17px; margin:14px 0 2px; }
+    /* category filters: one swipeable row instead of stacking into many rows */
+    .newslist { flex-wrap:nowrap; overflow-x:auto; -webkit-overflow-scrolling:touch; scrollbar-width:none; padding-bottom:2px; }
+    .newslist::-webkit-scrollbar { display:none; }
+    .newsitem { flex:0 0 auto; }
+    .sectiontab { padding:8px 14px; font-size:12px; }
+    .card { padding:11px 12px; }
+    .reader { padding:18px 10px; }
   }
   @media (prefers-reduced-motion: reduce) {
     .coverscan::after, .covbrand, .coventer.show, .covtapetrack, .ptitle .live::before, .covkbd .klbl { animation:none; }
