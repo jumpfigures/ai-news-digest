@@ -399,7 +399,9 @@ export function buildHtml(results, now, dateStr, research = [], ticker = []) {
   .cover { display:none; }
   html.js .cover {
     display:grid; grid-template-rows:auto minmax(0,1fr) auto auto;
-    position:fixed; inset:0; z-index:100; overflow:hidden;
+    position:fixed; top:0; left:0; width:100%;
+    height:100vh; height:100dvh; /* dvh tracks the mobile URL bar so the boot screen centres in the visible area */
+    z-index:100; overflow:hidden;
     background:${coverBgCss};
     transition:opacity .7s ease, visibility .7s ease;
   }
