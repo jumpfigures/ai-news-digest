@@ -249,7 +249,7 @@ export function buildHtml(results, now, dateStr, research = [], ticker = []) {
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Jumpfigures Terminal — ${esc(dateStr)}</title>
+<title>Jumpfigures — ${esc(dateStr)}</title>
 <script>document.documentElement.className += ' js';</script>
 <style>
   :root {
@@ -358,8 +358,15 @@ export function buildHtml(results, now, dateStr, research = [], ticker = []) {
   .routlet { display:block; color:var(--dim); font-size:11px; margin-top:4px; letter-spacing:1px; text-transform:uppercase; }
   /* News grid: cards fill left-to-right, then wrap to the next row. */
   .feed { display:grid; grid-template-columns:repeat(auto-fill, minmax(340px, 1fr)); gap:18px; align-items:start; }
+  /* No boxy outline — a left accent tick + subtle tint, terminal-feed style. */
   .card {
-    border:1px solid var(--line); background:#0c0a06; padding:12px 14px; margin:0; border-radius:2px;
+    background:#0b0905; padding:11px 14px; margin:0;
+    border-left:3px solid #3a2e12; border-radius:0 2px 2px 0;
+    transition:border-color .15s ease, background .15s ease, box-shadow .15s ease;
+  }
+  .card:hover {
+    border-left-color:var(--amber); background:#100c06;
+    box-shadow:0 0 0 1px rgba(255,160,40,.08), 0 6px 18px rgba(0,0,0,.35);
   }
   h2 { font-size:15.5px; line-height:1.4; margin:0 0 4px; }
   h2 a { color:var(--amber2); text-decoration:none; border-bottom:1px dotted #5a4a20; }
@@ -523,7 +530,7 @@ export function buildHtml(results, now, dateStr, research = [], ticker = []) {
       <div class="cnode" style="left:90%;top:33%"><span class="dot"></span><span class="ring" style="animation-delay:2.3s"></span><span class="clbl">TOKYO</span></div>
     </div>
     <div class="covtop">
-      <span><span class="dot">●&nbsp;●&nbsp;●</span>&nbsp;&nbsp;JUMPFIGURES&nbsp;TERMINAL</span>
+      <span><span class="dot">●&nbsp;●&nbsp;●</span>&nbsp;&nbsp;JUMPFIGURES</span>
       <span class="mid">MARKET&nbsp;INTELLIGENCE&nbsp;·&nbsp;SYSTEM&nbsp;BOOT</span>
       <span><span id="covclock">--:--:--</span>&nbsp;&nbsp;AINEWS&lt;GO&gt;</span>
     </div>
@@ -549,7 +556,7 @@ export function buildHtml(results, now, dateStr, research = [], ticker = []) {
     <div class="coverscan"></div>
   </div>
   <div class="chrome">
-    <span><span class="dot">●&nbsp;●&nbsp;●</span>&nbsp;&nbsp;JUMPFIGURES&nbsp;TERMINAL</span>
+    <span><span class="dot">●&nbsp;●&nbsp;●</span>&nbsp;&nbsp;JUMPFIGURES</span>
     <span>AINEWS&lt;GO&gt;</span>
   </div>
   <div class="wrap">
