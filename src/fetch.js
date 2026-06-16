@@ -150,6 +150,7 @@ export async function fetchAllFeeds() {
           content: extractSnippet(item),
           link: item.link || item.guid || '',
           image: extractImage(item),
+          date: item.isoDate || item.pubDate || '', // publication timestamp (ISO)
           fulltext: '',
         });
       }

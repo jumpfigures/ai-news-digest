@@ -109,6 +109,18 @@ export function buildHtml(results, now, dateStr, research = [], ticker = []) {
     ),
   ].join('');
 
+  // Bloomberg-style timestamp for a story, in WIB: "15 JUN · 14:32".
+  const fmtNewsDate = (iso) => {
+    if (!iso) return '';
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return '';
+    const date = d
+      .toLocaleDateString('en-GB', { day: '2-digit', month: 'short', timeZone: 'Asia/Jakarta' })
+      .toUpperCase();
+    const time = d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Jakarta' });
+    return `${date} · ${time}`;
+  };
+
   const cards = results
     .map(({ article, summary, category, brief }) => {
       const cat = category || 'World';
@@ -121,9 +133,10 @@ export function buildHtml(results, now, dateStr, research = [], ticker = []) {
       const summaryHtml = colorFields(marked.parse(summary));
       // Full own-words brief, hidden in the card; the in-page reader displays it.
       const briefHtml = brief ? `<div class="fullbrief" hidden>${marked.parse(brief)}</div>` : '';
+      const dateStamp = fmtNewsDate(article.date);
       return `      <article class="card" data-cat="${esc(cat)}">
         <h2>${title}</h2>
-        <div class="srcline"><span class="f f-cat">${esc(cat.toUpperCase())}</span> <span class="f f-src">SRC</span> ${esc(article.source)}</div>
+        <div class="srcline"><span class="f f-cat">${esc(cat.toUpperCase())}</span> <span class="srcname"><span class="f f-src">SRC</span> ${esc(article.source)}</span>${dateStamp ? `<time class="f-date">${dateStamp}</time>` : ''}</div>
         ${img}
         <div class="summary">${summaryHtml}</div>
         ${briefHtml}
@@ -351,7 +364,9 @@ export function buildHtml(results, now, dateStr, research = [], ticker = []) {
   h2 { font-size:15.5px; line-height:1.4; margin:0 0 4px; }
   h2 a { color:var(--amber2); text-decoration:none; border-bottom:1px dotted #5a4a20; }
   h2 a:hover { color:#fff; border-color:#fff; }
-  .srcline { color:var(--dim); font-size:11px; margin-bottom:8px; }
+  .srcline { color:var(--dim); font-size:11px; margin-bottom:8px; display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+  .srcname { display:inline-flex; align-items:center; gap:6px; }
+  .f-date { margin-left:auto; color:var(--amber); opacity:.7; font-size:11px; letter-spacing:.5px; white-space:nowrap; font-variant-numeric:tabular-nums; }
   .card img.thumb { display:block; width:100%; height:160px; object-fit:cover; margin:8px 0; border:1px solid var(--line); border-radius:2px; background:#000; }
   em { color:var(--dim); font-style:normal; }
   .f { font-weight:bold; letter-spacing:1px; font-size:11px; }
