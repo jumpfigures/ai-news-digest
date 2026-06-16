@@ -268,7 +268,33 @@ export function buildHtml(results, now, dateStr, research = [], ticker = []) {
     display:flex; justify-content:space-between; align-items:center;
     padding:6px 12px; letter-spacing:1px; font-size:12px;
   }
-  .chrome .dot { opacity:.55; letter-spacing:2px; }
+  /* macOS-style window controls: red=close, yellow=minimize, green=full screen.
+     Glossy dots with a tonal rim; symbols stay hidden until the group is hovered. */
+  .windots { display:inline-flex; align-items:center; gap:8px; vertical-align:middle; }
+  .wd {
+    width:14px; height:14px; border-radius:50%; border:none; padding:0; margin:0;
+    display:inline-flex; align-items:center; justify-content:center;
+    font-family:inherit; font-size:10.5px; line-height:1; font-weight:800;
+    color:transparent; -webkit-text-stroke:.6px currentColor; text-stroke:.6px currentColor;
+    cursor:pointer; -webkit-user-select:none; user-select:none;
+    transition:filter .12s ease;
+  }
+  .wd.d-r { background:radial-gradient(circle at 50% 32%, #ff8b86, #ff5f57 62%); box-shadow:inset 0 0 0 .5px #e0443b; }
+  .wd.d-y { background:radial-gradient(circle at 50% 32%, #ffd784, #febc2e 62%); box-shadow:inset 0 0 0 .5px #dfa023; }
+  .wd.d-g { background:radial-gradient(circle at 50% 32%, #74e588, #28c840 62%); box-shadow:inset 0 0 0 .5px #1dad2b; }
+  /* full-screen square drawn with a border so it stays crisp and perfectly centred */
+  .wd.d-g::before { content:""; width:6px; height:6px; box-sizing:border-box;
+    border:1.6px solid currentColor; border-radius:1px; }
+  .windots:hover .wd { color:rgba(0,0,0,.66); }
+  .wd:active { filter:brightness(.92); }
+  .covtop .wd { pointer-events:none; } /* decorative on the boot splash (click launches the terminal) */
+  /* closed: full-screen "session ended" curtain */
+  .closedscreen {
+    position:fixed; inset:0; z-index:200; background:#050403; cursor:pointer;
+    display:flex; align-items:center; justify-content:center; text-align:center;
+    color:var(--amber); letter-spacing:2px; font-size:14px; line-height:2;
+  }
+  .closedscreen span { color:var(--dim); font-size:12px; letter-spacing:1px; }
   .status {
     border-bottom:1px solid var(--line); color:var(--dim);
     padding:8px 0; font-size:12px; letter-spacing:.5px;
@@ -458,7 +484,6 @@ export function buildHtml(results, now, dateStr, research = [], ticker = []) {
   /* header bar */
   .covtop { display:flex; align-items:center; justify-content:space-between; gap:12px;
     background:var(--amber); color:#000; font-weight:bold; padding:5px 12px; font-size:12px; letter-spacing:1px; }
-  .covtop .dot { opacity:.55; letter-spacing:2px; }
   .covtop .mid { opacity:.8; letter-spacing:3px; font-size:11px; }
   /* main 3-column grid: left board | center boot | right board */
   .covmain { display:grid; grid-template-columns:minmax(0,1fr);
@@ -553,7 +578,7 @@ export function buildHtml(results, now, dateStr, research = [], ticker = []) {
       <div class="cnode" style="left:90%;top:33%"><span class="dot"></span><span class="ring" style="animation-delay:2.3s"></span><span class="clbl">TOKYO</span></div>
     </div>
     <div class="covtop">
-      <span><span class="dot">●&nbsp;●&nbsp;●</span>&nbsp;&nbsp;JUMPFIGURES</span>
+      <span><span class="windots"><span class="wd d-r">✕</span><span class="wd d-y">⟳</span><span class="wd d-g"></span></span>&nbsp;&nbsp;JUMPFIGURES</span>
       <span class="mid">MARKET&nbsp;INTELLIGENCE&nbsp;·&nbsp;SYSTEM&nbsp;BOOT</span>
       <span><span id="covclock">--:--:--</span>&nbsp;&nbsp;AINEWS&lt;GO&gt;</span>
     </div>
@@ -579,7 +604,7 @@ export function buildHtml(results, now, dateStr, research = [], ticker = []) {
     <div class="coverscan"></div>
   </div>
   <div class="chrome">
-    <span><span class="dot">●&nbsp;●&nbsp;●</span>&nbsp;&nbsp;JUMPFIGURES</span>
+    <span><span class="windots"><button class="wd d-r" id="wdClose" type="button" title="Close" aria-label="Close">✕</button><button class="wd d-y" id="wdReload" type="button" title="Reload" aria-label="Reload">⟳</button><button class="wd d-g" id="wdFull" type="button" title="Full screen" aria-label="Full screen"></button></span>&nbsp;&nbsp;JUMPFIGURES</span>
     <span>AINEWS&lt;GO&gt;</span>
   </div>
   <div class="wrap">
@@ -975,6 +1000,26 @@ ${cards}
       function tick() { if (clockEl) clockEl.textContent = new Date().toLocaleTimeString(); }
       tick();
       setInterval(tick, 1000);
+
+      // Window controls on the title bar: full screen / minimize / close.
+      var wdFull = document.getElementById('wdFull');
+      if (wdFull) wdFull.addEventListener('click', function () {
+        var fsEl = document.fullscreenElement || document.webkitFullscreenElement;
+        if (fsEl) { (document.exitFullscreen || document.webkitExitFullscreen || function () {}).call(document); }
+        else { var el = document.documentElement; (el.requestFullscreen || el.webkitRequestFullscreen || function () {}).call(el); }
+      });
+      var wdReload = document.getElementById('wdReload');
+      if (wdReload) wdReload.addEventListener('click', function () { location.reload(); });
+      var wdClose = document.getElementById('wdClose');
+      if (wdClose) wdClose.addEventListener('click', function () {
+        try { window.close(); } catch (e) {} // only works for script-opened tabs; otherwise show a curtain
+        if (document.querySelector('.closedscreen')) return;
+        var ov = document.createElement('div');
+        ov.className = 'closedscreen';
+        ov.innerHTML = '<div>\\u25B8 JUMPFIGURES SESSION ENDED<br><span>click anywhere to relaunch</span></div>';
+        ov.addEventListener('click', function () { location.reload(); });
+        document.body.appendChild(ov);
+      });
 
       // Auto-refresh: every 2s check (in the background) whether new content was
       // published; reload only when it actually changed — keeps the page always
