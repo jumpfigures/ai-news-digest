@@ -65,7 +65,7 @@ function colorFields(html) {
 // Flat markdown report — used for output/daily.md (and the email attachment).
 export function buildMarkdown(results, now, dateStr) {
   const lines = [
-    `# Zerotuones — ${dateStr}`,
+    `# Jumpfigure — ${dateStr}`,
     ``,
     `_Generated at ${now.toISOString()} · ${results.length} articles_`,
     ``,
@@ -271,7 +271,7 @@ export function buildHtml(results, now, dateStr, research = [], ticker = []) {
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Zerotuones — ${esc(dateStr)}</title>
+<title>Jumpfigure — ${esc(dateStr)}</title>
 <script>document.documentElement.className += ' js';</script>
 <style>
   :root {
@@ -408,7 +408,7 @@ export function buildHtml(results, now, dateStr, research = [], ticker = []) {
   .feed { display:grid; grid-template-columns:repeat(auto-fill, minmax(min(100%, 340px), 1fr)); gap:18px; align-items:start; }
   /* No boxy outline — a left accent tick + subtle tint, terminal-feed style. */
   .card {
-    background:#0b0905; padding:11px 14px; margin:0;
+    background:#0c0a06; padding:11px 14px; margin:0;
     border-left:3px solid #3a2e12; border-radius:0 2px 2px 0;
     transition:border-color .15s ease, background .15s ease, box-shadow .15s ease;
     /* skip rendering off-screen cards so a long feed scrolls at full frame rate */
@@ -539,8 +539,9 @@ export function buildHtml(results, now, dateStr, research = [], ticker = []) {
     text-shadow:0 0 10px rgba(255,176,72,.85), 0 0 30px rgba(255,160,40,.55), 0 0 70px rgba(255,160,40,.3); animation:covflicker 4s infinite; }
   @keyframes covflicker { 0%,100%{opacity:1} 92%{opacity:1} 93%{opacity:.4} 94%{opacity:1} 96%{opacity:.75} 97%{opacity:1} }
   .covsub { color:var(--amber2); letter-spacing:5px; font-size:clamp(9px,1.8vw,13px); margin-top:8px; }
-  .covlog { color:var(--green); font-size:11.5px; line-height:1.65; text-align:left; width:100%; max-width:420px;
-    min-height:120px; margin:26px auto 0; white-space:pre-wrap; word-break:break-word; text-shadow:0 0 6px rgba(61,247,107,.35); }
+  .covread { color:var(--amber2); font-size:11.5px; letter-spacing:1.5px; text-align:center; width:100%; max-width:600px;
+    margin:34px auto 12px; white-space:nowrap; overflow:hidden; text-shadow:0 0 8px rgba(255,160,40,.3); }
+  .covread b { color:#fff; font-weight:600; font-variant-numeric:tabular-nums; }
   .covbar { width:min(420px,90%); height:7px; border:1px solid var(--line); background:#0c0a06;
     border-radius:2px; overflow:hidden; margin:4px auto 0; }
   .covbar i { display:block; height:100%; width:0; border-radius:2px;
@@ -600,20 +601,20 @@ export function buildHtml(results, now, dateStr, research = [], ticker = []) {
     ${covBackdrop}
     ${covNodes}
     <div class="covtop">
-      <span><span class="windots"><span class="wd d-r">✕</span><span class="wd d-y">⟳</span><span class="wd d-g"></span></span>&nbsp;&nbsp;ZEROTUONES</span>
-      <span class="mid">MARKET&nbsp;INTELLIGENCE&nbsp;·&nbsp;SYSTEM&nbsp;BOOT</span>
+      <span><span class="windots"><span class="wd d-r">✕</span><span class="wd d-y">⟳</span><span class="wd d-g"></span></span>&nbsp;&nbsp;JUMPFIGURE</span>
+      <span class="mid">GLOBAL&nbsp;MARKET&nbsp;NETWORK</span>
       <span><span id="covclock">--:--:--</span>&nbsp;&nbsp;AINEWS&lt;GO&gt;</span>
     </div>
     <div class="covmain">
       <div class="covpanel covcenter">
-        <div class="covbrand">ZEROTUONES</div>
-        <div class="covsub">MARKET INTELLIGENCE TERMINAL</div>
-        <pre class="covlog" id="covlog"></pre>
+        <div class="covbrand">JUMPFIGURE</div>
+        <div class="covsub">GLOBAL MARKET NETWORK</div>
+        <div class="covread" id="covread"></div>
         <div class="covbar"><i id="covbarfill"></i></div>
         <div class="coventer" id="coventer">[ PRESS ENTER TO LAUNCH ]&nbsp;<span class="blink">▍</span></div>
       </div>
     </div>
-    <div class="covcmd"><span class="prompt">ZEROTUONES&gt;</span> <span id="covcmdtext"></span><span class="blink">▍</span></div>
+    <div class="covcmd"><span class="prompt">JUMPFIGURE&gt;</span> <span id="covcmdtext"></span><span class="blink">▍</span></div>
     <div class="covfn">
       <span class="fk go"><b>F1</b>HELP</span>
       <span class="fk"><b>F2</b>NEWS</span>
@@ -626,12 +627,12 @@ export function buildHtml(results, now, dateStr, research = [], ticker = []) {
     <div class="coverscan"></div>
   </div>
   <div class="chrome">
-    <span><span class="windots"><button class="wd d-r" id="wdClose" type="button" title="Close" aria-label="Close">✕</button><button class="wd d-y" id="wdReload" type="button" title="Reload" aria-label="Reload">⟳</button><button class="wd d-g" id="wdFull" type="button" title="Full screen" aria-label="Full screen"></button></span>&nbsp;&nbsp;ZEROTUONES</span>
+    <span><span class="windots"><button class="wd d-r" id="wdClose" type="button" title="Close" aria-label="Close">✕</button><button class="wd d-y" id="wdReload" type="button" title="Reload" aria-label="Reload">⟳</button><button class="wd d-g" id="wdFull" type="button" title="Full screen" aria-label="Full screen"></button></span>&nbsp;&nbsp;JUMPFIGURE</span>
     <span>AINEWS&lt;GO&gt;</span>
   </div>
   <div class="wrap">
     <div class="status">▸ LIVE · <span id="clock">--:--:--</span> · AUTO-REFRESH <b>2s</b> · ${order.length} SOURCES<span class="blink">&nbsp;▍</span></div>
-    <h1>Zerotuones — ${esc(dateStr)}</h1>
+    <h1>Jumpfigure — ${esc(dateStr)}</h1>
     <div class="meta">Generated ${now.toISOString()} · ${results.length} stories</div>
     <div class="sectiontabs" id="sectiontabs">
       <button class="sectiontab active" data-view="news" type="button">▸ NEWS</button>
@@ -669,7 +670,7 @@ ${cards}
         </div>
       </div>
     </div>
-    <div class="foot">ZEROTUONES · powered by Gemini · ${order.map(esc).join(' · ')}</div>
+    <div class="foot">JUMPFIGURE · powered by Gemini · ${order.map(esc).join(' · ')}</div>
   </div>
   <script>
     (function () {
@@ -679,7 +680,7 @@ ${cards}
       var cover = document.getElementById('cover');
       if (cover) {
         document.body.style.overflow = 'hidden';
-        var raf = 0, raf2 = 0, raf3 = 0, atlasSpawnT = 0, timers = [];
+        var raf = 0, raf2 = 0, raf3 = 0, atlasSpawnT = 0, readT = 0, relayCount = 9000 + Math.floor(Math.random() * 4000), timers = [];
         var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
         function later(fn, ms) { var t = setTimeout(fn, ms); timers.push(t); return t; }
 
@@ -880,23 +881,15 @@ ${cards}
         later(typeCmd, 700);
 
         // (5) boot log + progress, then ENTER prompt / auto-launch
-        var clog = document.getElementById('covlog');
+        var cread = document.getElementById('covread');
         var cbar = document.getElementById('covbarfill');
         var center = document.getElementById('coventer');
-        var lines = [
-          'INITIALIZING MARKET CORE...',
-          'SYNCING GLOBAL EXCHANGES...',
-          'LOADING INTELLIGENCE ENGINE...',
-          'ANALYZING MARKET REGIME...',
-          'GENERATING SIGNALS...',
-          'READY.'
-        ];
-        var li = 0, buf = '', launched = false, autoT = 0;
+        var launched = false, autoT = 0;
         function launch() {
           if (launched) return;
           launched = true;
           for (var t = 0; t < timers.length; t++) clearTimeout(timers[t]);
-          clearInterval(tickT); clearInterval(clockT); clearTimeout(autoT); clearInterval(atlasSpawnT);
+          clearInterval(tickT); clearInterval(clockT); clearTimeout(autoT); clearInterval(atlasSpawnT); clearInterval(readT);
           cover.classList.add('gone');
           document.body.style.overflow = '';
           setTimeout(function () {
@@ -906,23 +899,31 @@ ${cards}
             cover.style.display = 'none';
           }, 750);
         }
-        function step() {
-          if (li < lines.length) {
-            buf += (li ? '\\n' : '') + lines[li];
-            li++;
-            if (clog) clog.textContent = buf;
-            if (cbar) cbar.style.width = Math.round((li / lines.length) * 100) + '%';
-            later(step, 320);
-          } else {
-            if (center) center.classList.add('show');
-            autoT = setTimeout(launch, 3000);
-          }
+        // live network readout (HUBS / MARKETS LIVE / SIGNALS) + loading bar
+        var hubN = (typeof NODES !== 'undefined') ? NODES.length : 23;
+        var mktN = (typeof NODES !== 'undefined') ? NODES.filter(function (n) { return n.major; }).length : 8;
+        function paintRead() {
+          if (cread) cread.innerHTML = '▸ ' + hubN + ' HUBS ONLINE  ·  ' + mktN + ' MARKETS LIVE  ·  <b>' +
+            relayCount.toLocaleString('en-US') + '</b> SIGNALS ▲';
         }
+        var prog = 0, doneShown = false;
+        readT = setInterval(function () {
+          if (Math.random() < 0.65) relayCount += 1 + Math.floor(Math.random() * 3);
+          paintRead();
+          if (prog < 1) {
+            prog = Math.min(1, prog + 0.05);
+            if (cbar) cbar.style.width = Math.round(prog * 100) + '%';
+          } else if (!doneShown) {
+            doneShown = true;
+            if (center) center.classList.add('show');
+            autoT = setTimeout(launch, 3500);
+          }
+        }, 110);
+        paintRead();
         cover.addEventListener('click', launch);
         document.addEventListener('keydown', function (e) {
           if (!launched && (e.key === 'Enter' || e.key === ' ' || e.key === 'Escape')) launch();
         });
-        later(step, 700);
       }
 
       var menu = document.getElementById('newsmenu');
@@ -1057,7 +1058,7 @@ ${cards}
       var reader = document.createElement('div');
       reader.className = 'reader';
       reader.innerHTML =
-        '<div class="rpanel"><div class="rphead"><span>■ ARTICLE READER · ZEROTUONES</span>' +
+        '<div class="rpanel"><div class="rphead"><span>■ ARTICLE READER · JUMPFIGURE</span>' +
         '<button class="rpclose" type="button">✕ CLOSE [ESC]</button></div>' +
         '<div class="rpbody"></div></div>';
       document.body.appendChild(reader);
@@ -1159,7 +1160,7 @@ ${cards}
         if (document.querySelector('.closedscreen')) return;
         var ov = document.createElement('div');
         ov.className = 'closedscreen';
-        ov.innerHTML = '<div>\\u25B8 ZEROTUONES SESSION ENDED<br><span>click anywhere to relaunch</span></div>';
+        ov.innerHTML = '<div>\\u25B8 JUMPFIGURE SESSION ENDED<br><span>click anywhere to relaunch</span></div>';
         ov.addEventListener('click', function () { location.reload(); });
         document.body.appendChild(ov);
       });
