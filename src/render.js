@@ -25,6 +25,18 @@ const COVER_MAP_DATAURI = (() => {
   }
 })();
 
+// Optional animated node-atlas backdrop. Drop assets/cover-earth.jpg and the cover
+// becomes a live earth map with pulsing financial-hub nodes and slow signal trails
+// arcing between them. Takes precedence over the static map. Fails soft.
+const COVER_EARTH_DATAURI = (() => {
+  try {
+    const buf = readFileSync(new URL('../assets/cover-earth.jpg', import.meta.url));
+    return `data:image/jpeg;base64,${buf.toString('base64')}`;
+  } catch {
+    return null;
+  }
+})();
+
 export function formatDate(now) {
   return now.toLocaleDateString('en-US', {
     weekday: 'long',
@@ -128,7 +140,7 @@ export function buildHtml(results, now, dateStr, research = [], ticker = []) {
         ? `<a href="${esc(article.link)}" target="_blank" rel="noopener">${esc(article.title)}</a>`
         : esc(article.title);
       const img = article.image
-        ? `<img class="thumb" src="${esc(article.image)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.style.display='none'">`
+        ? `<img class="thumb" src="${esc(article.image)}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer" onerror="this.style.display='none'">`
         : '';
       const summaryHtml = colorFields(marked.parse(summary));
       // Full own-words brief, hidden in the card; the in-page reader displays it.
@@ -239,10 +251,20 @@ export function buildHtml(results, now, dateStr, research = [], ticker = []) {
   })();
   // Prefer a real keyboard SVG (assets/bloomberg-keyboard.svg) if the file exists.
   const covKbd = COVER_KBD_SVG || covKbdFallback;
-  // Cover backdrop: world map if assets/cover-map.jpg exists, else the keyboard.
-  const covBackdrop = COVER_MAP_DATAURI
-    ? `<div class="covmap"><img src="${COVER_MAP_DATAURI}" alt="" /></div>`
-    : `<div class="covkbd">${covKbd}</div>`;
+  // Cover backdrop: animated node-atlas if assets/cover-earth.jpg exists, else the
+  // static world map, else the keyboard.
+  const covBackdrop = COVER_EARTH_DATAURI
+    ? `<canvas class="covatlas" id="covatlas"></canvas>`
+    : COVER_MAP_DATAURI
+      ? `<div class="covmap"><img src="${COVER_MAP_DATAURI}" alt="" /></div>`
+      : `<div class="covkbd">${covKbd}</div>`;
+  // The 4 geo node pulses belong to the static map; the atlas draws its own nodes.
+  const covNodes = COVER_EARTH_DATAURI ? '' : `<div class="covnodes">
+      <div class="cnode" style="left:19%;top:33%"><span class="dot"></span><span class="ring" style="animation-delay:0s"></span><span class="clbl">NEW YORK</span></div>
+      <div class="cnode" style="left:41%;top:21%"><span class="dot"></span><span class="ring" style="animation-delay:.9s"></span><span class="clbl">LONDON</span></div>
+      <div class="cnode" style="left:79%;top:53%"><span class="dot"></span><span class="ring" style="animation-delay:1.6s"></span><span class="clbl">SINGAPORE</span></div>
+      <div class="cnode" style="left:90%;top:33%"><span class="dot"></span><span class="ring" style="animation-delay:2.3s"></span><span class="clbl">TOKYO</span></div>
+    </div>`;
 
   return `<!doctype html>
 <html lang="en">
@@ -389,6 +411,8 @@ export function buildHtml(results, now, dateStr, research = [], ticker = []) {
     background:#0b0905; padding:11px 14px; margin:0;
     border-left:3px solid #3a2e12; border-radius:0 2px 2px 0;
     transition:border-color .15s ease, background .15s ease, box-shadow .15s ease;
+    /* skip rendering off-screen cards so a long feed scrolls at full frame rate */
+    content-visibility:auto; contain-intrinsic-size:auto 440px;
   }
   .card:hover {
     border-left-color:var(--amber); background:#100c06;
@@ -459,6 +483,9 @@ export function buildHtml(results, now, dateStr, research = [], ticker = []) {
     opacity:.86; filter:saturate(1.22) brightness(1.08) contrast(1.1); }
   .covmap::after { content:""; position:absolute; inset:0;
     background:radial-gradient(ellipse 82% 70% at 50% 44%, rgba(8,7,4,.12) 0%, rgba(6,5,3,.34) 70%, rgba(4,3,2,.52) 100%); }
+  /* animated node-atlas backdrop (earth + hubs + signal trails), drawn by JS */
+  .covatlas { position:absolute; inset:0; width:100%; height:100%; z-index:0;
+    display:block; pointer-events:none; opacity:.95; }
   /* softly pulsing financial-hub nodes over the map */
   .covnodes { position:absolute; inset:0; z-index:1; pointer-events:none; }
   .cnode { position:absolute; transform:translate(-50%,-50%); }
@@ -571,12 +598,7 @@ export function buildHtml(results, now, dateStr, research = [], ticker = []) {
   <div class="cover" id="cover" aria-hidden="true">
     <canvas class="coverfx" id="coverfx"></canvas>
     ${covBackdrop}
-    <div class="covnodes">
-      <div class="cnode" style="left:19%;top:33%"><span class="dot"></span><span class="ring" style="animation-delay:0s"></span><span class="clbl">NEW YORK</span></div>
-      <div class="cnode" style="left:41%;top:21%"><span class="dot"></span><span class="ring" style="animation-delay:.9s"></span><span class="clbl">LONDON</span></div>
-      <div class="cnode" style="left:79%;top:53%"><span class="dot"></span><span class="ring" style="animation-delay:1.6s"></span><span class="clbl">SINGAPORE</span></div>
-      <div class="cnode" style="left:90%;top:33%"><span class="dot"></span><span class="ring" style="animation-delay:2.3s"></span><span class="clbl">TOKYO</span></div>
-    </div>
+    ${covNodes}
     <div class="covtop">
       <span><span class="windots"><span class="wd d-r">✕</span><span class="wd d-y">⟳</span><span class="wd d-g"></span></span>&nbsp;&nbsp;ZEROTUONES</span>
       <span class="mid">MARKET&nbsp;INTELLIGENCE&nbsp;·&nbsp;SYSTEM&nbsp;BOOT</span>
@@ -657,13 +679,13 @@ ${cards}
       var cover = document.getElementById('cover');
       if (cover) {
         document.body.style.overflow = 'hidden';
-        var raf = 0, raf2 = 0, timers = [];
+        var raf = 0, raf2 = 0, raf3 = 0, atlasSpawnT = 0, timers = [];
         var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
         function later(fn, ms) { var t = setTimeout(fn, ms); timers.push(t); return t; }
 
         // (1) faint number-rain behind the panels
         var cv = document.getElementById('coverfx');
-        if (cv && cv.getContext) {
+        if (cv && cv.getContext && !document.getElementById('covatlas')) {
           var ctx = cv.getContext('2d');
           var glyphs = '0123456789$+-.%▲▼';
           var fs = 16, cols = 0, drops = [];
@@ -690,6 +712,126 @@ ${cards}
             raf = window.requestAnimationFrame(rain);
           }
           rain();
+        }
+
+        // (1b) animated node-atlas: earth + pulsing hubs + slow signal arcs.
+        var atlas = document.getElementById('covatlas');
+        if (atlas && atlas.getContext) {
+          var actx = atlas.getContext('2d');
+          var EB = { lonMin: -180, lonMax: 180, latMin: -56, latMax: 83 };
+          var EASPECT = (EB.lonMax - EB.lonMin) / (EB.latMax - EB.latMin);
+          var NODES = [
+            { lon: -74.01, lat: 40.71, major: 1 }, { lon: -122.42, lat: 37.77, major: 0 },
+            { lon: -80.19, lat: 25.76, major: 0 }, { lon: -79.38, lat: 43.65, major: 0 },
+            { lon: -89.22, lat: 13.69, major: 1 }, { lon: -46.63, lat: -23.55, major: 0 },
+            { lon: -0.13, lat: 51.51, major: 1 }, { lon: 8.68, lat: 50.11, major: 0 },
+            { lon: 8.54, lat: 47.37, major: 0 }, { lon: 4.9, lat: 52.37, major: 0 },
+            { lon: 28.98, lat: 41.01, major: 0 }, { lon: 37.62, lat: 55.75, major: 0 },
+            { lon: 3.38, lat: 6.52, major: 0 }, { lon: 28.04, lat: -26.2, major: 0 },
+            { lon: 55.27, lat: 25.2, major: 1 }, { lon: 72.88, lat: 19.08, major: 0 },
+            { lon: 103.82, lat: 1.35, major: 1 }, { lon: 106.85, lat: -6.21, major: 1 },
+            { lon: 114.17, lat: 22.32, major: 1 }, { lon: 121.47, lat: 31.23, major: 0 },
+            { lon: 126.98, lat: 37.57, major: 0 }, { lon: 139.65, lat: 35.68, major: 1 },
+            { lon: 151.21, lat: -33.87, major: 0 }
+          ];
+          var earthImg = new Image(), earthReady = false;
+          earthImg.onload = function () { earthReady = true; };
+          earthImg.src = '${COVER_EARTH_DATAURI}';
+          var AW = 0, AH = 0, adpr = 1, mapW = 1000, mapH = mapW / EASPECT, ascale = 1, aox = 0, aoy = 0;
+          var lw = mapW / 1600;
+          function asz() {
+            AW = atlas.clientWidth || window.innerWidth;
+            AH = atlas.clientHeight || window.innerHeight;
+            adpr = Math.min(window.devicePixelRatio || 1, 2);
+            atlas.width = Math.round(AW * adpr); atlas.height = Math.round(AH * adpr);
+            ascale = Math.max(AW / mapW, AH / mapH);
+            aox = (AW - mapW * ascale) / 2; aoy = (AH - mapH * ascale) / 2;
+          }
+          function aproj(lon, lat) {
+            return [(lon - EB.lonMin) / (EB.lonMax - EB.lonMin) * mapW,
+                    (EB.latMax - lat) / (EB.latMax - EB.latMin) * mapH];
+          }
+          function gc(a, b, n) {
+            n = n || 80; var R = Math.PI / 180;
+            var la1 = a.lat * R, lo1 = a.lon * R, la2 = b.lat * R, lo2 = b.lon * R;
+            var A = [Math.cos(la1) * Math.cos(lo1), Math.cos(la1) * Math.sin(lo1), Math.sin(la1)];
+            var B = [Math.cos(la2) * Math.cos(lo2), Math.cos(la2) * Math.sin(lo2), Math.sin(la2)];
+            var dot = Math.max(-1, Math.min(1, A[0] * B[0] + A[1] * B[1] + A[2] * B[2]));
+            var w = Math.acos(dot), sw = Math.sin(w), pts = [];
+            for (var i = 0; i <= n; i++) {
+              var t = i / n, s1, s2;
+              if (sw < 1e-6) { s1 = 1 - t; s2 = t; } else { s1 = Math.sin((1 - t) * w) / sw; s2 = Math.sin(t * w) / sw; }
+              var x = s1 * A[0] + s2 * B[0], y = s1 * A[1] + s2 * B[1], z = s1 * A[2] + s2 * B[2];
+              pts.push({ lat: Math.asin(Math.max(-1, Math.min(1, z))) / R, lon: Math.atan2(y, x) / R });
+            }
+            return pts;
+          }
+          var asignals = [];
+          function aspawn() {
+            var s = Math.floor(Math.random() * NODES.length), d;
+            do { d = Math.floor(Math.random() * NODES.length); } while (d === s);
+            asignals.push({ d: d, path: gc(NODES[s], NODES[d], 80), t0: performance.now(), dur: 5200 + Math.random() * 4400, ring: 0 });
+          }
+          function adraw(now) {
+            actx.setTransform(adpr, 0, 0, adpr, 0, 0);
+            actx.clearRect(0, 0, AW, AH);
+            actx.setTransform(ascale * adpr, 0, 0, ascale * adpr, aox * adpr, aoy * adpr);
+            if (earthReady) actx.drawImage(earthImg, 0, 0, mapW, mapH);
+            else { actx.fillStyle = '#070d16'; actx.fillRect(0, 0, mapW, mapH); }
+            actx.strokeStyle = 'rgba(150,190,225,0.05)'; actx.lineWidth = lw;
+            for (var lo = EB.lonMin; lo <= EB.lonMax; lo += 30) { var gx = aproj(lo, 0)[0]; actx.beginPath(); actx.moveTo(gx, 0); actx.lineTo(gx, mapH); actx.stroke(); }
+            for (var laa = -30; laa <= 60; laa += 30) { var gy = aproj(0, laa)[1]; actx.beginPath(); actx.moveTo(0, gy); actx.lineTo(mapW, gy); actx.stroke(); }
+            actx.lineCap = 'round'; actx.lineJoin = 'round';
+            for (var k = asignals.length - 1; k >= 0; k--) {
+              var sig = asignals[k];
+              var prog = Math.max(0, Math.min(1, (now - sig.t0) / sig.dur));
+              var P = sig.path, N = P.length, pj = [];
+              for (var i = 0; i < N; i++) pj.push(aproj(P[i].lon, P[i].lat));
+              actx.strokeStyle = 'rgba(247,147,26,0.09)'; actx.lineWidth = lw * 0.9;
+              for (var i = 0; i < N - 1; i++) { if (Math.abs(pj[i + 1][0] - pj[i][0]) > mapW * 0.5) continue; actx.beginPath(); actx.moveTo(pj[i][0], pj[i][1]); actx.lineTo(pj[i + 1][0], pj[i + 1][1]); actx.stroke(); }
+              var fp = prog * (N - 1), hi = Math.max(0, Math.min(N - 2, Math.floor(fp))), f = fp - hi;
+              var head = [pj[hi][0] + (pj[hi + 1][0] - pj[hi][0]) * f, pj[hi][1] + (pj[hi + 1][1] - pj[hi][1]) * f];
+              var wrapH = Math.abs(pj[hi + 1][0] - pj[hi][0]) > mapW * 0.5;
+              var hpt = wrapH ? pj[hi] : head, stt = Math.max(0, hi - 14);
+              for (var i = stt; i < hi; i++) { if (Math.abs(pj[i + 1][0] - pj[i][0]) > mapW * 0.5) continue; var aa = (i - stt) / Math.max(1, (hi - stt)); actx.strokeStyle = 'rgba(255,170,60,' + (0.08 + aa * 0.55) + ')'; actx.lineWidth = lw * (0.6 + aa * 1.1); actx.beginPath(); actx.moveTo(pj[i][0], pj[i][1]); actx.lineTo(pj[i + 1][0], pj[i + 1][1]); actx.stroke(); }
+              if (prog < 1) {
+                var r = mapW / 520;
+                var g = actx.createRadialGradient(hpt[0], hpt[1], 0, hpt[0], hpt[1], r * 3.2);
+                g.addColorStop(0, 'rgba(255,236,200,1)'); g.addColorStop(0.4, 'rgba(255,160,50,0.8)'); g.addColorStop(1, 'rgba(255,150,40,0)');
+                actx.fillStyle = g; actx.beginPath(); actx.arc(hpt[0], hpt[1], r * 3.2, 0, 7); actx.fill();
+                actx.fillStyle = '#fff7ea'; actx.beginPath(); actx.arc(hpt[0], hpt[1], r * 0.8, 0, 7); actx.fill();
+              } else {
+                sig.ring += 0.04;
+                var dp = aproj(NODES[sig.d].lon, NODES[sig.d].lat), rr = sig.ring * (mapW / 45), al = Math.max(0, 0.5 - sig.ring * 0.5);
+                actx.strokeStyle = 'rgba(255,180,77,' + al + ')'; actx.lineWidth = lw; actx.beginPath(); actx.arc(dp[0], dp[1], rr, 0, 7); actx.stroke();
+                if (sig.ring > 1) asignals.splice(k, 1);
+              }
+            }
+            for (var i = 0; i < NODES.length; i++) {
+              var n = NODES[i], p = aproj(n.lon, n.lat), pu = 0.5 + 0.5 * Math.sin(now / 650 + i);
+              var core = (n.major ? 2.6 : 1.8) * (mapW / 900);
+              actx.strokeStyle = 'rgba(247,147,26,' + (0.22 + pu * 0.22) + ')'; actx.lineWidth = lw * 0.9;
+              actx.beginPath(); actx.arc(p[0], p[1], core * 2.1, 0, 7); actx.stroke();
+              actx.fillStyle = '#ffd9a0'; actx.beginPath(); actx.arc(p[0], p[1], core, 0, 7); actx.fill();
+              actx.fillStyle = n.major ? '#f7931a' : '#ffb84d'; actx.beginPath(); actx.arc(p[0], p[1], core * 0.55, 0, 7); actx.fill();
+            }
+            actx.setTransform(adpr, 0, 0, adpr, 0, 0);
+            var vg = actx.createRadialGradient(AW / 2, AH * 0.44, Math.min(AW, AH) * 0.1, AW / 2, AH * 0.44, Math.max(AW, AH) * 0.72);
+            vg.addColorStop(0, 'rgba(4,6,12,0.28)'); vg.addColorStop(0.55, 'rgba(4,6,12,0.52)'); vg.addColorStop(1, 'rgba(2,4,9,0.82)');
+            actx.fillStyle = vg; actx.fillRect(0, 0, AW, AH);
+            if (!reduce) raf3 = window.requestAnimationFrame(adraw);
+          }
+          asz();
+          window.addEventListener('resize', asz);
+          if (reduce) {
+            for (var i = 0; i < 7; i++) aspawn();
+            for (var i = 0; i < asignals.length; i++) asignals[i].t0 = performance.now() - asignals[i].dur * ((i + 1) / 9);
+            adraw(performance.now());
+          } else {
+            for (var i = 0; i < 4; i++) later(aspawn, i * 450);
+            atlasSpawnT = setInterval(function () { if (asignals.length < 13) aspawn(); }, 650);
+            raf3 = window.requestAnimationFrame(adraw);
+          }
         }
 
         // (2) live-looking quote boards (random walk + cell flash on update)
@@ -754,12 +896,13 @@ ${cards}
           if (launched) return;
           launched = true;
           for (var t = 0; t < timers.length; t++) clearTimeout(timers[t]);
-          clearInterval(tickT); clearInterval(clockT); clearTimeout(autoT);
+          clearInterval(tickT); clearInterval(clockT); clearTimeout(autoT); clearInterval(atlasSpawnT);
           cover.classList.add('gone');
           document.body.style.overflow = '';
           setTimeout(function () {
             if (raf) window.cancelAnimationFrame(raf);
             if (raf2) window.cancelAnimationFrame(raf2);
+            if (raf3) window.cancelAnimationFrame(raf3);
             cover.style.display = 'none';
           }, 750);
         }
@@ -1021,13 +1164,21 @@ ${cards}
         document.body.appendChild(ov);
       });
 
+      // Track active scrolling so background work never competes with a scroll frame.
+      var isScrolling = false, scrollIdle;
+      window.addEventListener('scroll', function () {
+        isScrolling = true;
+        clearTimeout(scrollIdle);
+        scrollIdle = setTimeout(function () { isScrolling = false; }, 250);
+      }, { passive: true });
+
       // Auto-refresh: every 2s check (in the background) whether new content was
       // published; reload only when it actually changed — keeps the page always
-      // fresh without flicker. Paused while reading, in a menu, or on MARKET.
+      // fresh without flicker. Paused while scrolling, reading, in a menu, or on MARKET.
       var stampEl = document.querySelector('.meta');
       var stamp = stampEl ? stampEl.textContent : '';
       setInterval(function () {
-        if (document.hidden || !list.hidden || !marketView.hidden || reader.classList.contains('open')) return;
+        if (document.hidden || isScrolling || !list.hidden || !marketView.hidden || reader.classList.contains('open')) return;
         fetch(window.location.href, { cache: 'no-store' })
           .then(function (r) { return r.text(); })
           .then(function (html) {
