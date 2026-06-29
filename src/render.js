@@ -270,7 +270,7 @@ export function buildHtml(results, now, dateStr, research = [], ticker = []) {
 <html lang="en">
 <head>
 <meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>Jumpfigures — ${esc(dateStr)}</title>
 <script>document.documentElement.className += ' js';</script>
 <style>
@@ -282,13 +282,14 @@ export function buildHtml(results, now, dateStr, research = [], ticker = []) {
   body {
     background:var(--bg); color:var(--amber);
     font-family:"Consolas","SF Mono","Roboto Mono","Courier New",monospace;
-    font-size:14px; line-height:1.55; margin:0; padding:0 0 60px;
+    font-size:14px; line-height:1.55; margin:0; padding:0 0 calc(60px + env(safe-area-inset-bottom));
   }
   .wrap { max-width:1480px; margin:0 auto; padding:0 18px; }
   .chrome {
     background:var(--amber); color:#000; font-weight:bold;
     display:flex; justify-content:space-between; align-items:center;
-    padding:6px 12px; letter-spacing:1px; font-size:12px;
+    padding:max(6px,env(safe-area-inset-top)) max(12px,env(safe-area-inset-right)) 6px max(12px,env(safe-area-inset-left));
+    letter-spacing:1px; font-size:12px;
   }
   /* macOS-style window controls: red=close, yellow=minimize, green=full screen.
      Glossy dots with a tonal rim; symbols stay hidden until the group is hovered. */
@@ -510,7 +511,8 @@ export function buildHtml(results, now, dateStr, research = [], ticker = []) {
   .covtop, .covmain, .covcmd, .covtape, .covfn { position:relative; z-index:2; }
   /* header bar */
   .covtop { display:flex; align-items:center; justify-content:space-between; gap:12px;
-    background:var(--amber); color:#000; font-weight:bold; padding:5px 12px; font-size:12px; letter-spacing:1px; }
+    background:var(--amber); color:#000; font-weight:bold; font-size:12px; letter-spacing:1px;
+    padding:max(5px,env(safe-area-inset-top)) max(12px,env(safe-area-inset-right)) 5px max(12px,env(safe-area-inset-left)); }
   .covtop .mid { opacity:.8; letter-spacing:3px; font-size:11px; }
   /* main 3-column grid: left board | center boot | right board */
   .covmain { display:grid; grid-template-columns:minmax(0,1fr);
@@ -558,7 +560,7 @@ export function buildHtml(results, now, dateStr, research = [], ticker = []) {
   .covtapetrack { display:inline-block; white-space:nowrap; animation:tscroll 42s linear infinite; font-size:12px; }
   .covtape .th { color:var(--amber2); margin:0 22px; }
   /* function-key footer */
-  .covfn { display:flex; background:#0c0a06; }
+  .covfn { display:flex; background:#0c0a06; padding-bottom:env(safe-area-inset-bottom); }
   .covfn .fk { flex:1; text-align:center; padding:7px 4px; font-size:10.5px; letter-spacing:1px;
     color:var(--dim); border-right:1px solid var(--line); white-space:nowrap; overflow:hidden; }
   .covfn .fk:last-child { border-right:none; }
@@ -573,6 +575,9 @@ export function buildHtml(results, now, dateStr, research = [], ticker = []) {
     .covnodes { display:none; }
     .covtop .mid { display:none; }
     .covbrand { letter-spacing:4px; }
+    .covsub { letter-spacing:3px; }
+    /* let the network readout wrap instead of clipping its tail on a phone */
+    .covread { white-space:normal; font-size:10.5px; line-height:1.6; max-width:92%; letter-spacing:1px; }
     .covcmd { font-size:11px; }
   }
   /* ---- phone layout for the digest below the cover ---- */
@@ -589,6 +594,14 @@ export function buildHtml(results, now, dateStr, research = [], ticker = []) {
     .sectiontab { padding:8px 14px; font-size:12px; }
     .card { padding:11px 12px; }
     .reader { padding:18px 10px; }
+  }
+  /* very narrow phones — keep the boot brand/readout from crowding the edges */
+  @media (max-width:380px) {
+    .covbrand { letter-spacing:2px; }
+    .covsub { letter-spacing:2px; font-size:9.5px; }
+    .covread { font-size:10px; letter-spacing:.5px; }
+    .covtop .windots { gap:6px; }
+    .chrome, .covtop { font-size:11px; }
   }
   @media (prefers-reduced-motion: reduce) {
     .coverscan::after, .covbrand, .coventer.show, .covtapetrack, .ptitle .live::before, .covkbd .klbl { animation:none; }
