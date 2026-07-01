@@ -616,32 +616,21 @@ export function buildHtml(results, now, dateStr, research = [], ticker = []) {
     <div class="covtop">
       <span><span class="windots"><span class="wd d-r">✕</span><span class="wd d-y">⟳</span><span class="wd d-g"></span></span>&nbsp;&nbsp;JUMPFIGURES</span>
       <span class="mid">GLOBAL&nbsp;MARKET&nbsp;NETWORK</span>
-      <span><span id="covclock">--:--:--</span>&nbsp;&nbsp;AINEWS&lt;GO&gt;</span>
+      <span><span id="covclock">--:--:--</span></span>
     </div>
     <div class="covmain">
       <div class="covpanel covcenter">
         <div class="covbrand">JUMPFIGURES</div>
-        <div class="covsub">GLOBAL MARKET NETWORK</div>
         <div class="covread" id="covread"></div>
         <div class="covbar"><i id="covbarfill"></i></div>
         <div class="coventer" id="coventer">[ PRESS ENTER TO LAUNCH ]&nbsp;<span class="blink">▍</span></div>
       </div>
     </div>
     <div class="covcmd"><span class="prompt">JUMPFIGURES&gt;</span> <span id="covcmdtext"></span><span class="blink">▍</span></div>
-    <div class="covfn">
-      <span class="fk go"><b>F1</b>HELP</span>
-      <span class="fk"><b>F2</b>NEWS</span>
-      <span class="fk"><b>F3</b>MARKETS</span>
-      <span class="fk opt"><b>F4</b>RESEARCH</span>
-      <span class="fk opt"><b>F5</b>CALENDAR</span>
-      <span class="fk opt"><b>F6</b>ALERTS</span>
-      <span class="fk">MENU</span>
-    </div>
     <div class="coverscan"></div>
   </div>
   <div class="chrome">
     <span><span class="windots"><button class="wd d-r" id="wdClose" type="button" title="Close" aria-label="Close">✕</button><button class="wd d-y" id="wdReload" type="button" title="Reload" aria-label="Reload">⟳</button><button class="wd d-g" id="wdFull" type="button" title="Full screen" aria-label="Full screen"></button></span>&nbsp;&nbsp;JUMPFIGURES</span>
-    <span>AINEWS&lt;GO&gt;</span>
   </div>
   <div class="wrap">
     <div class="status">▸ LIVE · <span id="clock">--:--:--</span> · AUTO-REFRESH <b>2s</b> · ${order.length} SOURCES<span class="blink">&nbsp;▍</span></div>
@@ -735,18 +724,18 @@ ${cards}
           var EB = { lonMin: -180, lonMax: 180, latMin: -56, latMax: 83 };
           var EASPECT = (EB.lonMax - EB.lonMin) / (EB.latMax - EB.latMin);
           var NODES = [
-            { lon: -74.01, lat: 40.71, major: 1 }, { lon: -122.42, lat: 37.77, major: 0 },
-            { lon: -80.19, lat: 25.76, major: 0 }, { lon: -79.38, lat: 43.65, major: 0 },
-            { lon: -89.22, lat: 13.69, major: 1 }, { lon: -46.63, lat: -23.55, major: 0 },
-            { lon: -0.13, lat: 51.51, major: 1 }, { lon: 8.68, lat: 50.11, major: 0 },
-            { lon: 8.54, lat: 47.37, major: 0 }, { lon: 4.9, lat: 52.37, major: 0 },
-            { lon: 28.98, lat: 41.01, major: 0 }, { lon: 37.62, lat: 55.75, major: 0 },
-            { lon: 3.38, lat: 6.52, major: 0 }, { lon: 28.04, lat: -26.2, major: 0 },
-            { lon: 55.27, lat: 25.2, major: 1 }, { lon: 72.88, lat: 19.08, major: 0 },
-            { lon: 103.82, lat: 1.35, major: 1 }, { lon: 106.85, lat: -6.21, major: 1 },
-            { lon: 114.17, lat: 22.32, major: 1 }, { lon: 121.47, lat: 31.23, major: 0 },
-            { lon: 126.98, lat: 37.57, major: 0 }, { lon: 139.65, lat: 35.68, major: 1 },
-            { lon: 151.21, lat: -33.87, major: 0 }
+            { lon: -74.01, lat: 40.71, major: 1, name: 'USA' }, { lon: -122.42, lat: 37.77, major: 0, name: 'USA' },
+            { lon: -80.19, lat: 25.76, major: 0, name: 'USA' }, { lon: -79.38, lat: 43.65, major: 0, name: 'CANADA' },
+            { lon: -89.22, lat: 13.69, major: 1, name: 'EL SALVADOR' }, { lon: -46.63, lat: -23.55, major: 0, name: 'BRAZIL' },
+            { lon: -0.13, lat: 51.51, major: 1, name: 'UK' }, { lon: 8.68, lat: 50.11, major: 0, name: 'GERMANY' },
+            { lon: 8.54, lat: 47.37, major: 0, name: 'SWITZERLAND' }, { lon: 4.9, lat: 52.37, major: 0, name: 'NETHERLANDS' },
+            { lon: 28.98, lat: 41.01, major: 0, name: 'TURKEY' }, { lon: 37.62, lat: 55.75, major: 0, name: 'RUSSIA' },
+            { lon: 3.38, lat: 6.52, major: 0, name: 'NIGERIA' }, { lon: 28.04, lat: -26.2, major: 0, name: 'SOUTH AFRICA' },
+            { lon: 55.27, lat: 25.2, major: 1, name: 'UAE' }, { lon: 72.88, lat: 19.08, major: 0, name: 'INDIA' },
+            { lon: 103.82, lat: 1.35, major: 1, name: 'SINGAPORE' }, { lon: 106.85, lat: -6.21, major: 1, name: 'INDONESIA' },
+            { lon: 114.17, lat: 22.32, major: 1, name: 'HONG KONG' }, { lon: 121.47, lat: 31.23, major: 0, name: 'CHINA' },
+            { lon: 126.98, lat: 37.57, major: 0, name: 'SOUTH KOREA' }, { lon: 139.65, lat: 35.68, major: 1, name: 'JAPAN' },
+            { lon: 151.21, lat: -33.87, major: 0, name: 'AUSTRALIA' }
           ];
           var earthImg = new Image(), earthReady = false;
           earthImg.onload = function () { earthReady = true; };
@@ -833,6 +822,24 @@ ${cards}
             var vg = actx.createRadialGradient(AW / 2, AH * 0.44, Math.min(AW, AH) * 0.1, AW / 2, AH * 0.44, Math.max(AW, AH) * 0.72);
             vg.addColorStop(0, 'rgba(4,6,12,0.28)'); vg.addColorStop(0.55, 'rgba(4,6,12,0.52)'); vg.addColorStop(1, 'rgba(2,4,9,0.82)');
             actx.fillStyle = vg; actx.fillRect(0, 0, AW, AH);
+            // country labels beside each node — drawn in screen space, above the
+            // vignette so the text stays crisp over the darkened map.
+            actx.textBaseline = 'middle';
+            actx.font = '600 ' + Math.max(9, Math.round(Math.min(AW, AH) / 64)) + 'px "SF Mono","Consolas",ui-monospace,monospace';
+            for (var li = 0; li < NODES.length; li++) {
+              var ln = NODES[li], lp = aproj(ln.lon, ln.lat);
+              var lsx = aox + lp[0] * ascale, lsy = aoy + lp[1] * ascale;
+              if (lsx < -60 || lsx > AW + 60 || lsy < -20 || lsy > AH + 20) continue;
+              var lcore = (ln.major ? 2.6 : 1.8) * (mapW / 900) * ascale;
+              var ltw = actx.measureText(ln.name).width;
+              var lleft = lsx > AW - ltw - 16;
+              actx.textAlign = lleft ? 'right' : 'left';
+              var lox = (lleft ? -1 : 1) * (lcore * 2.4 + 4);
+              actx.fillStyle = 'rgba(0,0,0,0.6)';
+              actx.fillText(ln.name, lsx + lox + 0.7, lsy + 0.7);
+              actx.fillStyle = ln.major ? 'rgba(255,201,128,0.95)' : 'rgba(226,236,246,0.7)';
+              actx.fillText(ln.name, lsx + lox, lsy);
+            }
             if (!reduce) raf3 = window.requestAnimationFrame(adraw);
           }
           asz();
