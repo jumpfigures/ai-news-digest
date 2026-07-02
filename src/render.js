@@ -104,10 +104,9 @@ function buildStatistic(stats, crypto = CRYPTO_CORR) {
   if (!stats || !Array.isArray(stats.assets) || stats.assets.length < 2) {
     return '<div class="statempty">▸ Market statistics unavailable right now.</div>';
   }
-  const { assets, matrix, metrics, days, since, until } = stats;
-  const pct = (v) => `${v >= 0 ? '+' : ''}${v.toFixed(1)}%`;
+  const { assets, matrix, days, since, until } = stats;
 
-  // (1) Correlation matrix — color-coded heatmap table.
+  // Correlation matrix — color-coded heatmap table.
   const head = `<tr><th class="corncorner"></th>${assets
     .map((a) => `<th title="${esc(a.label)}">${esc(a.short)}</th>`)
     .join('')}</tr>`;
@@ -153,57 +152,9 @@ function buildStatistic(stats, crypto = CRYPTO_CORR) {
         </div>
       </div>`;
 
-  // (2) Returns / volatility — annualized volatility bar chart.
-  const byVol = [...metrics].sort((a, b) => b.vol - a.vol);
-  const maxVol = Math.max(...byVol.map((m) => m.vol), 0.0001);
-  const volRows = byVol
-    .map((m) => {
-      const w = Math.max(2, (m.vol / maxVol) * 100).toFixed(1);
-      return `<div class="statrow"><span class="statlabel" title="${esc(m.label)}">${esc(m.label)}</span><span class="statbarwrap"><span class="statbar" style="width:${w}%"></span></span><span class="statval">${m.vol.toFixed(1)}%</span></div>`;
-    })
-    .join('');
-  const mostV = byVol[0];
-  const leastV = byVol[byVol.length - 1];
-  const rvPanel = `<div class="statpanel" data-stat="rv" hidden>
-        <div class="statgrid">
-          <div class="stattile"><div class="statbig">${assets.length}</div><div class="statcap">ASSETS TRACKED</div></div>
-          <div class="stattile"><div class="statbig sm">${esc(mostV.label)}</div><div class="statcap">MOST VOLATILE · ${mostV.vol.toFixed(1)}%</div></div>
-          <div class="stattile"><div class="statbig sm">${esc(leastV.label)}</div><div class="statcap">LEAST VOLATILE · ${leastV.vol.toFixed(1)}%</div></div>
-        </div>
-        <div class="mkthead">▸ ANNUALIZED VOLATILITY</div>
-        <div class="statchart">${volRows}</div>
-      </div>`;
-
-  // (3) Performance ranking — period return bar chart (green up / red down).
-  const byRet = [...metrics].sort((a, b) => b.ret - a.ret);
-  const maxAbs = Math.max(...byRet.map((m) => Math.abs(m.ret)), 0.0001);
-  const perfRows = byRet
-    .map((m) => {
-      const up = m.ret >= 0;
-      const w = Math.max(2, (Math.abs(m.ret) / maxAbs) * 100).toFixed(1);
-      return `<div class="statrow"><span class="statlabel" title="${esc(m.label)}">${esc(m.label)}</span><span class="statbarwrap"><span class="statbar ${up ? 'up' : 'dn'}" style="width:${w}%"></span></span><span class="statval ${up ? 'up' : 'dn'}">${pct(m.ret)}</span></div>`;
-    })
-    .join('');
-  const best = byRet[0];
-  const worst = byRet[byRet.length - 1];
-  const perfPanel = `<div class="statpanel" data-stat="perf" hidden>
-        <div class="statgrid">
-          <div class="stattile"><div class="statbig sm ${best.ret >= 0 ? 'up' : 'dn'}">${esc(best.label)}</div><div class="statcap">TOP · ${pct(best.ret)}</div></div>
-          <div class="stattile"><div class="statbig sm ${worst.ret >= 0 ? 'up' : 'dn'}">${esc(worst.label)}</div><div class="statcap">BOTTOM · ${pct(worst.ret)}</div></div>
-          <div class="stattile"><div class="statbig">${days}</div><div class="statcap">TRADING DAYS</div></div>
-        </div>
-        <div class="mkthead">▸ PERIOD RETURN</div>
-        <div class="statchart">${perfRows}</div>
-      </div>`;
-
-  const menu = `<div class="statmenu"><ul class="newslist" id="statlist">
-        <li class="newsitem active" data-stat="corr">CORRELATION MATRIX</li>
-        <li class="newsitem" data-stat="rv">RETURNS / VOLATILITY</li>
-        <li class="newsitem" data-stat="perf">PERFORMANCE RANKING</li>
-      </ul></div>`;
   const meta = `<div class="statmeta">▸ ${days} TRADING DAYS · ${esc(since)} → ${esc(until)} · DAILY RETURNS · SOURCE: YAHOO FINANCE</div>`;
 
-  return menu + meta + corrPanel + rvPanel + perfPanel;
+  return meta + corrPanel;
 }
 
 // Flat markdown report — used for output/daily.md (and the email attachment).
@@ -1211,20 +1162,6 @@ ${cards}
       }
       for (var i = 0; i < sectBtns.length; i++) {
         sectBtns[i].addEventListener('click', function () { showView(this.getAttribute('data-view')); });
-      }
-
-      // STATISTIC sub-list: switch between correlation / returns-vol / ranking panels.
-      var statlist = document.getElementById('statlist');
-      if (statlist && statisticView) {
-        var statItems = statlist.querySelectorAll('.newsitem');
-        var statPanels = statisticView.querySelectorAll('.statpanel');
-        for (var si = 0; si < statItems.length; si++) {
-          statItems[si].addEventListener('click', function () {
-            var key = this.getAttribute('data-stat');
-            for (var a = 0; a < statItems.length; a++) statItems[a].classList.toggle('active', statItems[a] === this);
-            for (var b = 0; b < statPanels.length; b++) statPanels[b].hidden = statPanels[b].getAttribute('data-stat') !== key;
-          });
-        }
       }
 
       // Correlation Matrix sub-toggle: CROSS-ASSET (static daily) vs CRYPTO (live).
