@@ -1,4 +1,4 @@
-# AI News Digest
+# Jumpfigure
 
 Fetches news from RSS feeds (CNBC, CoinDesk, TechCrunch), summarizes every
 article with the Gemini API in a single request, and writes a daily report to
@@ -8,7 +8,7 @@ in the cloud via GitHub Actions with a 7am email.
 ## Project structure
 
 ```
-ai-news-digest/
+jumpfigure/
 ├─ src/
 │  ├─ main.js        # orchestration: fetch → summarize → write md + html
 │  ├─ fetch.js       # pull & normalize RSS items

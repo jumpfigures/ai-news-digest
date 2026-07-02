@@ -1,4 +1,4 @@
-name: Daily AI News Digest
+name: Daily Jumpfigure
 
 on:
   schedule:
@@ -62,9 +62,9 @@ jobs:
           secure: true
           username: ${{ secrets.MAIL_USERNAME }}
           password: ${{ secrets.MAIL_PASSWORD }}
-          subject: "🗞️ Jumpfigures — ${{ steps.date.outputs.today }}"
+          subject: "🗞️ Jumpfigure — ${{ steps.date.outputs.today }}"
           to: ${{ secrets.MAIL_USERNAME }} # sends to yourself; hides the address from the public repo
-          from: AI News Digest <${{ secrets.MAIL_USERNAME }}>
+          from: Jumpfigure <${{ secrets.MAIL_USERNAME }}>
           html_body: file://output/daily.html
           attachments: output/daily.md
 

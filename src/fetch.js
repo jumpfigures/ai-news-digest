@@ -101,7 +101,7 @@ async function fetchArticlePage(url, timeoutMs = 9000) {
     const res = await fetch(url, {
       signal: controller.signal,
       redirect: 'follow',
-      headers: { 'User-Agent': 'Mozilla/5.0 (compatible; JumpfiguresBot/1.0)' },
+      headers: { 'User-Agent': 'Mozilla/5.0 (compatible; JumpfigureBot/1.0)' },
     });
     clearTimeout(timer);
     if (!res.ok) return { image: '', text: '' };

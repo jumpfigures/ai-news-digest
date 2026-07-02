@@ -1,11 +1,11 @@
-Cover assets for the Jumpfigures intro.
+Cover assets for the Jumpfigure intro.
 
 bloomberg-keyboard.svg  -> optional. If present, it is inlined as the cover
                            background (the keyboard). If absent, a built-in
                            lightweight vector keyboard is drawn instead.
 
 To use your own exact keyboard art:
-  1. Save your vector as:  ai-news-digest/assets/bloomberg-keyboard.svg
+  1. Save your vector as:  jumpfigure/assets/bloomberg-keyboard.svg
   2. Commit it (so the GitHub Actions build can read it).
   3. Rebuild (node src/main.js) — it gets inlined automatically.
 

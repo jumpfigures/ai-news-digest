@@ -1,12 +1,12 @@
 @echo off
 REM ============================================================
-REM  AI News Digest - runner
+REM  Jumpfigure - runner
 REM  Dipakai oleh Windows Task Scheduler, atau klik 2x manual.
 REM  Output program ditulis ke output\daily.md
 REM  Log tiap run ditambahkan ke output\run.log
 REM ============================================================
 
-cd /d "C:\Users\zerotuone\Documents\scrap\ai-news-digest"
+cd /d "C:\Users\zerotuone\Documents\scrap\jumpfigure"
 
 echo. >> "output\run.log"
 echo ===== Run: %DATE% %TIME% ===== >> "output\run.log"
