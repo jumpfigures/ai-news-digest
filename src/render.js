@@ -62,6 +62,150 @@ function colorFields(html) {
     .replace(/<strong>Market Impact<\/strong>/g, '<strong class="f f-mkt">MARKET IMPACT</strong>');
 }
 
+// Live crypto correlation set — Binance combined-stream symbols + display labels.
+// These stream 24/7 to the browser (keyless WebSocket), so the crypto matrix can
+// be recomputed live every second; the cross-asset matrix stays daily/server-side.
+// The real list is resolved fresh each build by fetchCryptoCorr() (current top-20
+// by market cap); this static set is only the fallback used when that fetch fails.
+const CRYPTO_CORR = [
+  { s: 'btcusdt', label: 'BTC' },
+  { s: 'ethusdt', label: 'ETH' },
+  { s: 'bnbusdt', label: 'BNB' },
+  { s: 'solusdt', label: 'SOL' },
+  { s: 'xrpusdt', label: 'XRP' },
+  { s: 'dogeusdt', label: 'DOGE' },
+  { s: 'adausdt', label: 'ADA' },
+  { s: 'trxusdt', label: 'TRX' },
+  { s: 'avaxusdt', label: 'AVAX' },
+  { s: 'linkusdt', label: 'LINK' },
+  { s: 'dotusdt', label: 'DOT' },
+  { s: 'ltcusdt', label: 'LTC' },
+  { s: 'bchusdt', label: 'BCH' },
+  { s: 'nearusdt', label: 'NEAR' },
+  { s: 'uniusdt', label: 'UNI' },
+  { s: 'aptusdt', label: 'APT' },
+  { s: 'icpusdt', label: 'ICP' },
+  { s: 'filusdt', label: 'FIL' },
+  { s: 'etcusdt', label: 'ETC' },
+  { s: 'atomusdt', label: 'ATOM' },
+];
+
+// Color a correlation cell: green for positive, red for negative co-movement,
+// intensity scaled by the strength |r|. Returned as an rgba() string.
+function corrColor(r) {
+  const a = (0.1 + Math.min(1, Math.abs(r)) * 0.55).toFixed(3);
+  return r >= 0 ? `rgba(61,247,107,${a})` : `rgba(255,92,92,${a})`;
+}
+
+// Build the inner HTML for the STATISTIC tab: a clickable list (correlation
+// matrix / returns-volatility / performance ranking) plus one panel per item.
+// All values are precomputed in fetchStats(); this only lays them out.
+function buildStatistic(stats, crypto = CRYPTO_CORR) {
+  if (!stats || !Array.isArray(stats.assets) || stats.assets.length < 2) {
+    return '<div class="statempty">▸ Market statistics unavailable right now.</div>';
+  }
+  const { assets, matrix, metrics, days, since, until } = stats;
+  const pct = (v) => `${v >= 0 ? '+' : ''}${v.toFixed(1)}%`;
+
+  // (1) Correlation matrix — color-coded heatmap table.
+  const head = `<tr><th class="corncorner"></th>${assets
+    .map((a) => `<th title="${esc(a.label)}">${esc(a.short)}</th>`)
+    .join('')}</tr>`;
+  const rows = assets
+    .map((a, i) => {
+      const cells = matrix[i]
+        .map((r, j) => {
+          const v = r.toFixed(2);
+          const diag = i === j ? ' cc-diag' : '';
+          return `<td class="cc${diag}" style="background:${corrColor(r)}" title="${esc(a.short)} × ${esc(assets[j].short)}: ${v}">${v}</td>`;
+        })
+        .join('');
+      return `<tr><th title="${esc(a.label)}">${esc(a.short)}</th>${cells}</tr>`;
+    })
+    .join('');
+  const corrKey = `<div class="corrkey"><span class="ck"><i style="background:${corrColor(-0.85)}"></i>NEGATIVE</span><span class="ck"><i style="background:${corrColor(0.04)}"></i>NONE</span><span class="ck"><i style="background:${corrColor(0.85)}"></i>POSITIVE</span></div>`;
+
+  // Live crypto matrix skeleton — cells carry data-i/data-j so the browser can
+  // repaint them each second from the Binance stream. Diagonal starts at 1.00.
+  const cHead = `<tr><th class="corncorner"></th>${crypto.map((c) => `<th>${esc(c.label)}</th>`).join('')}</tr>`;
+  const cRows = crypto.map((c, i) => {
+    const cs = crypto.map((_, j) => {
+      const diag = i === j ? ' cc-diag' : '';
+      const bg = i === j ? ` style="background:${corrColor(1)}"` : '';
+      return `<td class="cc${diag}" data-i="${i}" data-j="${j}"${bg}>${i === j ? '1.00' : '·'}</td>`;
+    }).join('');
+    return `<tr><th>${esc(c.label)}</th>${cs}</tr>`;
+  }).join('');
+
+  const corrPanel = `<div class="statpanel" data-stat="corr">
+        <div class="corrtoggle">
+          <button class="corrtab active" data-corr="asset" type="button">CROSS-ASSET · DAILY</button>
+          <button class="corrtab" data-corr="crypto" type="button"><span class="livedot"></span>CRYPTO · LIVE</button>
+        </div>
+        <div class="corrsub" data-corr="asset">
+          <div class="corrwrap"><table class="corrtable"><thead>${head}</thead><tbody>${rows}</tbody></table></div>
+          ${corrKey}
+        </div>
+        <div class="corrsub" data-corr="crypto" hidden>
+          <div class="livestat" id="cryptoStatus">▸ CONNECTING TO LIVE FEED…</div>
+          <div class="corrwrap"><table class="corrtable" id="cryptoTable"><thead>${cHead}</thead><tbody>${cRows}</tbody></table></div>
+          ${corrKey}
+        </div>
+      </div>`;
+
+  // (2) Returns / volatility — annualized volatility bar chart.
+  const byVol = [...metrics].sort((a, b) => b.vol - a.vol);
+  const maxVol = Math.max(...byVol.map((m) => m.vol), 0.0001);
+  const volRows = byVol
+    .map((m) => {
+      const w = Math.max(2, (m.vol / maxVol) * 100).toFixed(1);
+      return `<div class="statrow"><span class="statlabel" title="${esc(m.label)}">${esc(m.label)}</span><span class="statbarwrap"><span class="statbar" style="width:${w}%"></span></span><span class="statval">${m.vol.toFixed(1)}%</span></div>`;
+    })
+    .join('');
+  const mostV = byVol[0];
+  const leastV = byVol[byVol.length - 1];
+  const rvPanel = `<div class="statpanel" data-stat="rv" hidden>
+        <div class="statgrid">
+          <div class="stattile"><div class="statbig">${assets.length}</div><div class="statcap">ASSETS TRACKED</div></div>
+          <div class="stattile"><div class="statbig sm">${esc(mostV.label)}</div><div class="statcap">MOST VOLATILE · ${mostV.vol.toFixed(1)}%</div></div>
+          <div class="stattile"><div class="statbig sm">${esc(leastV.label)}</div><div class="statcap">LEAST VOLATILE · ${leastV.vol.toFixed(1)}%</div></div>
+        </div>
+        <div class="mkthead">▸ ANNUALIZED VOLATILITY</div>
+        <div class="statchart">${volRows}</div>
+      </div>`;
+
+  // (3) Performance ranking — period return bar chart (green up / red down).
+  const byRet = [...metrics].sort((a, b) => b.ret - a.ret);
+  const maxAbs = Math.max(...byRet.map((m) => Math.abs(m.ret)), 0.0001);
+  const perfRows = byRet
+    .map((m) => {
+      const up = m.ret >= 0;
+      const w = Math.max(2, (Math.abs(m.ret) / maxAbs) * 100).toFixed(1);
+      return `<div class="statrow"><span class="statlabel" title="${esc(m.label)}">${esc(m.label)}</span><span class="statbarwrap"><span class="statbar ${up ? 'up' : 'dn'}" style="width:${w}%"></span></span><span class="statval ${up ? 'up' : 'dn'}">${pct(m.ret)}</span></div>`;
+    })
+    .join('');
+  const best = byRet[0];
+  const worst = byRet[byRet.length - 1];
+  const perfPanel = `<div class="statpanel" data-stat="perf" hidden>
+        <div class="statgrid">
+          <div class="stattile"><div class="statbig sm ${best.ret >= 0 ? 'up' : 'dn'}">${esc(best.label)}</div><div class="statcap">TOP · ${pct(best.ret)}</div></div>
+          <div class="stattile"><div class="statbig sm ${worst.ret >= 0 ? 'up' : 'dn'}">${esc(worst.label)}</div><div class="statcap">BOTTOM · ${pct(worst.ret)}</div></div>
+          <div class="stattile"><div class="statbig">${days}</div><div class="statcap">TRADING DAYS</div></div>
+        </div>
+        <div class="mkthead">▸ PERIOD RETURN</div>
+        <div class="statchart">${perfRows}</div>
+      </div>`;
+
+  const menu = `<div class="statmenu"><ul class="newslist" id="statlist">
+        <li class="newsitem active" data-stat="corr">CORRELATION MATRIX</li>
+        <li class="newsitem" data-stat="rv">RETURNS / VOLATILITY</li>
+        <li class="newsitem" data-stat="perf">PERFORMANCE RANKING</li>
+      </ul></div>`;
+  const meta = `<div class="statmeta">▸ ${days} TRADING DAYS · ${esc(since)} → ${esc(until)} · DAILY RETURNS · SOURCE: YAHOO FINANCE</div>`;
+
+  return menu + meta + corrPanel + rvPanel + perfPanel;
+}
+
 // Flat markdown report — used for output/daily.md (and the email attachment).
 export function buildMarkdown(results, now, dateStr) {
   const lines = [
@@ -91,7 +235,10 @@ export function buildMarkdown(results, now, dateStr) {
 // Progressive enhancement: the tab bar is hidden by default and revealed by JS,
 // so email clients (no JS) just show every article, while the website (JS) gets
 // clickable source tabs that filter the feed.
-export function buildHtml(results, now, dateStr, research = [], ticker = []) {
+export function buildHtml(results, now, dateStr, research = [], ticker = [], stats = null, crypto = CRYPTO_CORR) {
+  // Live crypto correlation set (top-N by market cap, resolved at build time);
+  // fall back to the static list if the fetch came back empty/unusable.
+  const cryptoList = Array.isArray(crypto) && crypto.length >= 2 ? crypto : CRYPTO_CORR;
   // Sources in first-seen order, with counts.
   const order = [];
   const counts = {};
@@ -180,6 +327,9 @@ export function buildHtml(results, now, dateStr, research = [], ticker = []) {
         })
         .join('\n')
     : '<div class="routlet">No institutional commentary found right now.</div>';
+
+  // STATISTIC tab: cross-asset correlation matrix + returns/volatility + ranking.
+  const statisticHtml = buildStatistic(stats, cryptoList);
 
   // Real headlines scrolling across the cover's bottom ticker (duplicated for a seamless loop).
   const covHead = results.length
@@ -383,8 +533,75 @@ export function buildHtml(results, now, dateStr, research = [], ticker = []) {
   .rscroll { overflow-y:auto; padding:2px 14px; }
   .rscroll::-webkit-scrollbar { width:8px; }
   .rscroll::-webkit-scrollbar-track { background:#0c0a06; }
-  .rscroll::-webkit-scrollbar-thumb { background:#2a2210; border-radius:4px; }
+  .rscroll::-webkit-scrollbar-thumb { background:linear-gradient(180deg,var(--amber2),var(--amber) 45%,#b06f12);
+    border-radius:5px; box-shadow:0 0 6px rgba(255,160,40,.3); }
   .rcard:last-child { border-bottom:none; }
+  /* STATISTIC tab: digest analytics (stat tiles + horizontal bar charts) */
+  #statisticView { padding:6px 0 0; }
+  .statgrid { display:grid; grid-template-columns:repeat(auto-fit, minmax(150px, 1fr)); gap:12px; margin:4px 0 22px; }
+  .stattile { border:1px solid var(--line); background:#0c0a06; border-radius:2px; padding:14px 16px; border-left:3px solid var(--amber); }
+  .statbig { color:var(--amber2); font-size:30px; font-weight:bold; letter-spacing:1px; line-height:1; font-variant-numeric:tabular-nums; }
+  .statbig.sm { font-size:19px; letter-spacing:.5px; }
+  .statcap { color:var(--dim); font-size:10.5px; font-weight:bold; letter-spacing:1.5px; margin-top:8px; }
+  .statchart { display:flex; flex-direction:column; gap:9px; padding:2px 2px 6px; }
+  .statrow { display:grid; grid-template-columns:132px 1fr 44px; gap:12px; align-items:center; font-size:12px; }
+  .statlabel { color:var(--amber); font-weight:bold; letter-spacing:.5px; text-align:right; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .statbarwrap { height:16px; background:#0c0a06; border:1px solid var(--line); border-radius:2px; overflow:hidden; }
+  .statbar { display:block; height:100%; min-width:2px; border-radius:1px;
+    background:linear-gradient(90deg,var(--amber),var(--amber2)); box-shadow:0 0 10px rgba(255,160,40,.35); }
+  .statval { color:var(--amber2); text-align:right; font-variant-numeric:tabular-nums; font-weight:bold; }
+  /* STATISTIC sub-list (reuses .newslist/.newsitem chip styling) + section meta */
+  .statmenu { margin:2px 0 12px; }
+  .statmeta { color:var(--dim); font-size:11px; letter-spacing:1px; margin:0 0 18px; text-transform:uppercase; }
+  /* red/green variants for return bars + values (shared by RV + PERF panels) */
+  .statbig.up, .statval.up { color:var(--green); }
+  .statbig.dn, .statval.dn { color:#ff5c5c; }
+  .statbar.up { background:linear-gradient(90deg,var(--green),#9dffbe); box-shadow:0 0 10px rgba(61,247,107,.32); }
+  .statbar.dn { background:linear-gradient(90deg,#ff5c5c,#ff9a9a); box-shadow:0 0 10px rgba(255,92,92,.32); }
+  .statempty { color:var(--dim); padding:26px 2px; letter-spacing:1px; }
+  /* correlation matrix heatmap table */
+  /* Terminal-style scrollbars: amber glow on dark, so overflow reads as designed
+     rather than default-gray. Global (Firefox via scrollbar-*, Chrome/Safari via
+     ::-webkit-scrollbar); the matrix bar below gets a taller, glowier variant. */
+  * { scrollbar-width:thin; scrollbar-color:var(--amber) #0c0a06; }
+  ::-webkit-scrollbar { width:10px; height:10px; }
+  ::-webkit-scrollbar-track { background:#0c0a06; border-radius:6px; box-shadow:inset 0 0 0 1px var(--line); }
+  ::-webkit-scrollbar-thumb { background:linear-gradient(180deg,var(--amber2),var(--amber) 45%,#b06f12);
+    border:2px solid #0c0a06; border-radius:6px; box-shadow:0 0 6px rgba(255,160,40,.35); }
+  ::-webkit-scrollbar-thumb:hover { background:linear-gradient(180deg,#ffd591,var(--amber2) 45%,var(--amber));
+    box-shadow:0 0 12px rgba(255,160,40,.75); }
+  ::-webkit-scrollbar-corner { background:#0c0a06; }
+
+  .corrwrap { overflow-x:auto; margin:2px 0 16px; padding-bottom:5px; -webkit-overflow-scrolling:touch;
+    scrollbar-color:var(--amber) #0c0a06; }
+  /* The horizontal matrix bar is the one users drag — make it taller + glowier. */
+  .corrwrap::-webkit-scrollbar { height:14px; }
+  .corrwrap::-webkit-scrollbar-track { background:#0c0a06; border-radius:8px; box-shadow:inset 0 0 0 1px var(--line); }
+  .corrwrap::-webkit-scrollbar-thumb { background:linear-gradient(180deg,var(--amber2),var(--amber) 50%,#a9690f);
+    border:3px solid #0c0a06; border-radius:8px; box-shadow:0 0 10px rgba(255,160,40,.5); }
+  .corrwrap::-webkit-scrollbar-thumb:hover { background:linear-gradient(180deg,#ffe0ad,var(--amber2) 50%,var(--amber));
+    box-shadow:0 0 16px rgba(255,160,40,.85); }
+  .corrtable { border-collapse:collapse; font-size:15px; font-variant-numeric:tabular-nums; }
+  .corrtable th { color:var(--amber); font-weight:bold; letter-spacing:.5px; padding:7px 12px; text-align:center; background:#0c0a06; white-space:nowrap; }
+  .corrtable thead th { border-bottom:1px solid var(--line); }
+  .corrtable tbody th { text-align:right; border-right:1px solid var(--line); position:sticky; left:0; z-index:1; }
+  .corrtable .corncorner { border-right:1px solid var(--line); border-bottom:1px solid var(--line); position:sticky; left:0; z-index:1; }
+  .corrtable td.cc { text-align:center; padding:10px 15px; color:#fff; min-width:62px;
+    border:1px solid rgba(0,0,0,.35); text-shadow:0 1px 2px rgba(0,0,0,.6); }
+  .corrtable td.cc-diag { color:var(--amber2); font-weight:bold; }
+  .corrkey { display:flex; flex-wrap:wrap; gap:16px; color:var(--dim); font-size:10.5px; letter-spacing:1.5px; font-weight:bold; }
+  .corrkey .ck { display:inline-flex; align-items:center; gap:6px; }
+  .corrkey .ck i { width:14px; height:14px; border-radius:2px; display:inline-block; border:1px solid rgba(0,0,0,.4); }
+  /* CROSS-ASSET vs CRYPTO·LIVE toggle inside the correlation panel */
+  .corrtoggle { display:flex; gap:6px; margin:0 0 12px; }
+  .corrtab { font-family:inherit; font-size:11px; font-weight:bold; letter-spacing:1px; cursor:pointer;
+    background:#0d0b06; color:var(--amber); border:1px solid #4a3a14; border-radius:2px; padding:5px 12px;
+    display:inline-flex; align-items:center; gap:7px; }
+  .corrtab:hover { background:#241c0c; }
+  .corrtab.active { background:var(--amber); color:#000; border-color:var(--amber); }
+  .corrtab .livedot { width:7px; height:7px; border-radius:50%; background:var(--green); box-shadow:0 0 6px var(--green); animation:covpulse 1.2s infinite; }
+  .corrtab.active .livedot { background:#0a5; box-shadow:none; }
+  .livestat { color:var(--green); font-size:11px; letter-spacing:1px; margin:0 0 10px; font-weight:bold; font-variant-numeric:tabular-nums; }
   /* in-page article reader (terminal-style modal) */
   .reader { position:fixed; inset:0; background:rgba(0,0,0,.85); z-index:50; display:none; align-items:flex-start; justify-content:center; overflow-y:auto; padding:42px 16px; }
   .reader.open { display:flex; }
@@ -592,6 +809,8 @@ export function buildHtml(results, now, dateStr, research = [], ticker = []) {
     .newslist::-webkit-scrollbar { display:none; }
     .newsitem { flex:0 0 auto; }
     .sectiontab { padding:8px 14px; font-size:12px; }
+    .statrow { grid-template-columns:86px 1fr 36px; gap:8px; font-size:11px; }
+    .statlabel { letter-spacing:0; }
     .card { padding:11px 12px; }
     .reader { padding:18px 10px; }
   }
@@ -639,6 +858,7 @@ export function buildHtml(results, now, dateStr, research = [], ticker = []) {
     <div class="sectiontabs" id="sectiontabs">
       <button class="sectiontab active" data-view="news" type="button">▸ NEWS</button>
       <button class="sectiontab" data-view="market" type="button">▸ MARKET</button>
+      <button class="sectiontab" data-view="statistic" type="button">▸ STATISTIC</button>
     </div>
 
     <div id="newsView">
@@ -672,6 +892,8 @@ ${cards}
         </div>
       </div>
     </div>
+
+    <div id="statisticView" hidden>${statisticHtml}</div>
     <div class="foot">JUMPFIGURES · powered by Gemini · ${order.map(esc).join(' · ')}</div>
   </div>
   <script>
@@ -974,6 +1196,7 @@ ${cards}
       var sectiontabs = document.getElementById('sectiontabs');
       var newsView = document.getElementById('newsView');
       var marketView = document.getElementById('marketView');
+      var statisticView = document.getElementById('statisticView');
       sectiontabs.style.display = 'flex';
       var sectBtns = sectiontabs.querySelectorAll('.sectiontab');
       var marketLoaded = false;
@@ -983,10 +1206,119 @@ ${cards}
         }
         newsView.hidden = view !== 'news';
         marketView.hidden = view !== 'market';
+        if (statisticView) statisticView.hidden = view !== 'statistic';
         if (view === 'market' && !marketLoaded) { loadMarket(); marketLoaded = true; }
       }
       for (var i = 0; i < sectBtns.length; i++) {
         sectBtns[i].addEventListener('click', function () { showView(this.getAttribute('data-view')); });
+      }
+
+      // STATISTIC sub-list: switch between correlation / returns-vol / ranking panels.
+      var statlist = document.getElementById('statlist');
+      if (statlist && statisticView) {
+        var statItems = statlist.querySelectorAll('.newsitem');
+        var statPanels = statisticView.querySelectorAll('.statpanel');
+        for (var si = 0; si < statItems.length; si++) {
+          statItems[si].addEventListener('click', function () {
+            var key = this.getAttribute('data-stat');
+            for (var a = 0; a < statItems.length; a++) statItems[a].classList.toggle('active', statItems[a] === this);
+            for (var b = 0; b < statPanels.length; b++) statPanels[b].hidden = statPanels[b].getAttribute('data-stat') !== key;
+          });
+        }
+      }
+
+      // Correlation Matrix sub-toggle: CROSS-ASSET (static daily) vs CRYPTO (live).
+      var corrPanelEl = statisticView ? statisticView.querySelector('.statpanel[data-stat="corr"]') : null;
+      if (corrPanelEl) {
+        var corrTabs = corrPanelEl.querySelectorAll('.corrtab');
+        var corrSubs = corrPanelEl.querySelectorAll('.corrsub');
+        var liveStarted = false;
+        for (var ct = 0; ct < corrTabs.length; ct++) {
+          corrTabs[ct].addEventListener('click', function () {
+            var key = this.getAttribute('data-corr');
+            for (var a = 0; a < corrTabs.length; a++) corrTabs[a].classList.toggle('active', corrTabs[a] === this);
+            for (var b = 0; b < corrSubs.length; b++) corrSubs[b].hidden = corrSubs[b].getAttribute('data-corr') !== key;
+            if (key === 'crypto' && !liveStarted) { liveStarted = true; startCryptoCorr(); }
+          });
+        }
+      }
+
+      // Live crypto correlation: stream last prices over a keyless Binance
+      // WebSocket, sample once per second into a rolling return window, and
+      // recompute the Pearson correlation matrix every second. Lazy — only runs
+      // the first time the CRYPTO·LIVE tab is opened.
+      function startCryptoCorr() {
+        var CRYPTO = ${JSON.stringify(cryptoList)};
+        var N = CRYPTO.length, WINDOW = 120;
+        var table = document.getElementById('cryptoTable');
+        var statusEl = document.getElementById('cryptoStatus');
+        if (!table) return;
+
+        var price = [], have = [], lastSample = [], rets = [], cells = [];
+        for (var i = 0; i < N; i++) { price[i] = 0; have[i] = false; lastSample[i] = 0; rets[i] = []; }
+        for (var i = 0; i < N; i++) {
+          cells[i] = [];
+          for (var j = 0; j < N; j++) cells[i][j] = table.querySelector('td[data-i="' + i + '"][data-j="' + j + '"]');
+        }
+
+        function ccColor(r) {
+          var a = (0.1 + Math.min(1, Math.abs(r)) * 0.55).toFixed(3);
+          return r >= 0 ? 'rgba(61,247,107,' + a + ')' : 'rgba(255,92,92,' + a + ')';
+        }
+        function avg(x) { var s = 0; for (var i = 0; i < x.length; i++) s += x[i]; return x.length ? s / x.length : 0; }
+        function pearson(a, b) {
+          var n = Math.min(a.length, b.length);
+          if (n < 2) return 0;
+          var ma = avg(a), mb = avg(b), num = 0, da = 0, db = 0;
+          for (var i = 0; i < n; i++) { var xa = a[i] - ma, xb = b[i] - mb; num += xa * xb; da += xa * xa; db += xb * xb; }
+          var d = Math.sqrt(da * db);
+          return d ? Math.max(-1, Math.min(1, num / d)) : 0;
+        }
+        function paint(filled) {
+          for (var i = 0; i < N; i++) {
+            for (var j = 0; j < N; j++) {
+              var cell = cells[i][j];
+              if (!cell) continue;
+              if (i === j) { cell.textContent = '1.00'; cell.style.background = ccColor(1); }
+              else if (filled < 2) { cell.textContent = '·'; cell.style.background = ''; }
+              else { var r = pearson(rets[i], rets[j]); cell.textContent = r.toFixed(2); cell.style.background = ccColor(r); }
+            }
+          }
+        }
+
+        // 1s sampler: turn the latest streamed prices into a rolling return series.
+        setInterval(function () {
+          for (var i = 0; i < N; i++) {
+            if (!have[i]) continue;
+            if (lastSample[i]) { rets[i].push((price[i] - lastSample[i]) / lastSample[i]); if (rets[i].length > WINDOW) rets[i].shift(); }
+            lastSample[i] = price[i];
+          }
+          var filled = rets[0].length;
+          if (statusEl) statusEl.textContent = filled < 2
+            ? '▸ LIVE · warming up ' + filled + '/' + WINDOW + ' …'
+            : '▸ LIVE · streaming · window ' + filled + '/' + WINDOW + 's · ' + new Date().toLocaleTimeString();
+          paint(filled);
+        }, 1000);
+
+        // Binance combined mini-ticker stream (one last-price update/sec/symbol).
+        var idx = {};
+        for (var i = 0; i < N; i++) idx[CRYPTO[i].s.toUpperCase()] = i;
+        function connect() {
+          var streams = CRYPTO.map(function (c) { return c.s + '@miniTicker'; }).join('/');
+          var ws;
+          // Binance's public market-data domain (keyless, CORS/proxy-friendly).
+          try { ws = new WebSocket('wss://data-stream.binance.vision/stream?streams=' + streams); }
+          catch (e) { if (statusEl) statusEl.textContent = '▸ LIVE FEED UNAVAILABLE (blocked?)'; return; }
+          ws.onmessage = function (ev) {
+            try {
+              var m = JSON.parse(ev.data), d = m.data || m, k = idx[d.s];
+              if (k !== undefined) { price[k] = parseFloat(d.c); have[k] = true; }
+            } catch (e) {}
+          };
+          ws.onclose = function () { setTimeout(connect, 3000); };
+          ws.onerror = function () { try { ws.close(); } catch (e) {} };
+        }
+        connect();
       }
 
       // One TradingView chart per asset class, in a grid. The free widget gives
@@ -1199,7 +1531,7 @@ ${cards}
       var stampEl = document.querySelector('.meta');
       var stamp = stampEl ? stampEl.textContent : '';
       setInterval(function () {
-        if (document.hidden || isScrolling || !list.hidden || !marketView.hidden || reader.classList.contains('open')) return;
+        if (document.hidden || isScrolling || !list.hidden || !marketView.hidden || (statisticView && !statisticView.hidden) || reader.classList.contains('open')) return;
         fetch(window.location.href, { cache: 'no-store' })
           .then(function (r) { return r.text(); })
           .then(function (html) {

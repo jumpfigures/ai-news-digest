@@ -2,7 +2,7 @@ import './env.js';
 import { mkdirSync, writeFileSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
-import { fetchAllFeeds, fetchResearch, fetchTicker } from './fetch.js';
+import { fetchAllFeeds, fetchResearch, fetchTicker, fetchStats, fetchCryptoCorr } from './fetch.js';
 import { summarizeAll } from './summarize.js';
 import { formatDate, buildMarkdown, buildHtml } from './render.js';
 
@@ -50,12 +50,18 @@ async function main() {
     brief: summaries[i].brief,
   }));
 
-  const [research, ticker] = await Promise.all([fetchResearch(), fetchTicker()]);
+  const [research, ticker, stats, crypto] = await Promise.all([
+    fetchResearch(),
+    fetchTicker(),
+    fetchStats(),
+    fetchCryptoCorr(20),
+  ]);
+  if (crypto) console.log(`Live crypto set: ${crypto.map((c) => c.label).join(', ')}`);
 
   const now = new Date();
   const dateStr = formatDate(now);
   const markdown = buildMarkdown(results, now, dateStr);
-  const html = buildHtml(results, now, dateStr, research, ticker);
+  const html = buildHtml(results, now, dateStr, research, ticker, stats, crypto);
 
   mkdirSync(OUTPUT_DIR, { recursive: true });
   writeFileSync(MD_FILE, markdown, 'utf-8');
